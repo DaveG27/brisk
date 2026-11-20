@@ -153,6 +153,19 @@ svg.i{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke
 .toast{position:fixed;left:50%;bottom:90px;transform:translate(-50%,160px);background:#0a2540;color:#fff;border-radius:12px;padding:8px 8px 8px 16px;display:flex;gap:10px;align-items:center;z-index:40;font-size:14px;max-width:92vw;transition:transform .2s;box-shadow:0 8px 30px rgba(0,0,0,.3)}
 .toast.show{transform:translate(-50%,0)}
 .toast button{color:var(--sky);font-weight:700;padding:0 10px}
+.provs{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 6px}
+.prov{border:1px solid #2b5079;color:#cfe0f2;border-radius:999px;padding:0 14px;min-height:38px;font-size:14px}
+.prov.on{background:var(--sky);color:var(--rail);border-color:var(--sky);font-weight:700}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.abadge{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;color:#fff;font-size:11px;font-weight:700;margin-left:4px}
+.acctline{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--mute);margin-left:8px;vertical-align:4px}
+.accsec{border-top:1px solid #1d3d62;margin-top:8px;padding-top:6px}
+.acchead{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:0 12px;color:#fff;font-weight:600;min-height:44px}
+.acchead span:nth-child(2){flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.acchead small{color:#8aa3bf;font-weight:400;font-size:12px}
+.nav.rm{color:#ff9ab5;font-size:13px;min-height:36px}
+.nav.addacc{color:var(--sky);font-weight:600;margin-top:8px;border-top:1px solid #1d3d62;border-radius:0}
+.field select{flex:1;border:0;background:none;min-height:48px;outline:0;font-size:16px}
 @media(min-width:900px){
  body{display:grid;grid-template-columns:minmax(360px,440px) minmax(0,1fr)}
  #app{border-right:1px solid var(--line)}
@@ -186,28 +199,29 @@ svg.i{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke
  <symbol id="i-inbox" viewBox="0 0 24 24"><path d="M22 12h-6l-2 3h-4l-2-3H2M5.5 5h13L22 12v7H2v-7z"/></symbol>
 </svg>
 
-<!-- sign in -->
+<!-- add account -->
 <div id="login" class="hide">
  <div class="in">
+  <button class="lk hide" id="lcancel" style="margin-bottom:16px">← Back to mail</button>
   <h1>Brisk<b>.</b></h1>
-  <p>Your Gmail, colour-coded, searchable in a blink, and checked before you hit send.</p>
+  <p id="lintro">All your email in one place: colour-coded, searchable in a blink, and checked before you hit send.</p>
+  <div class="provs" id="provs"></div>
   <form id="lform">
-   <label for="lemail">Gmail address</label>
+   <label for="lemail">Email address</label>
    <input id="lemail" type="email" autocomplete="email" placeholder="you@gmail.com" required>
-   <label for="lpass">App password (16 letters)</label>
-   <input id="lpass" type="password" autocomplete="off" placeholder="abcd efgh ijkl mnop" required>
-   <button class="go" type="submit" id="lgo">Sign in</button>
+   <label for="lpass" id="lpasslabel">App password</label>
+   <input id="lpass" type="password" autocomplete="off" required>
+   <div id="custom" class="hide">
+    <label for="limap">Incoming (IMAP) server</label><input id="limap" placeholder="imap.example.com" autocapitalize="off">
+    <div class="two"><div><label for="limapport">Port</label><input id="limapport" inputmode="numeric" value="993"></div>
+     <div><label for="lsmtpport">SMTP port</label><input id="lsmtpport" inputmode="numeric" value="465"></div></div>
+    <label for="lsmtp">Outgoing (SMTP) server</label><input id="lsmtp" placeholder="smtp.example.com" autocapitalize="off">
+    <label for="luser">Username (if not your email address)</label><input id="luser" autocapitalize="off" autocomplete="off">
+   </div>
+   <button class="go" type="submit" id="lgo">Add account</button>
    <div class="err" id="lerr" role="alert"></div>
   </form>
-  <div class="how">
-   <h3>Getting an app password (2 minutes)</h3>
-   <ol>
-    <li>Turn on <b>2-Step Verification</b> for your Google account, if it isn't on already: <button class="lk" data-url="https://myaccount.google.com/signinoptions/two-step-verification">open settings</button></li>
-    <li>Go to <button class="lk" data-url="https://myaccount.google.com/apppasswords">myaccount.google.com/apppasswords</button>, type the name <b>Brisk</b> and tap Create.</li>
-    <li>Copy the 16-letter code Google shows you and paste it above.</li>
-   </ol>
-   <p style="margin:0;font-size:13px">The code is stored encrypted on this phone only and is sent only to Google. You can revoke it from the same page at any time.</p>
-  </div>
+  <div class="how" id="how"></div>
  </div>
 </div>
 
@@ -216,7 +230,7 @@ svg.i{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke
   <button class="ib" id="menubtn" aria-label="Menu"><svg class="i"><use href="#i-menu"/></svg></button>
   <div class="sb"><svg class="i" style="opacity:.7"><use href="#i-search"/></svg>
    <input id="q" type="search" placeholder="Search all mail" autocomplete="off" aria-label="Search mail" spellcheck="false"></div>
-  <button class="av" id="avbtn" aria-label="Account">B</button>
+  <button class="av" id="avbtn" aria-label="Accounts">B</button>
  </header>
  <div class="chips" id="chips"></div>
  <div class="stat"><span id="stat"></span><button id="refresh" aria-label="Refresh"><svg class="i"><use href="#i-refresh"/></svg></button></div>
@@ -225,7 +239,7 @@ svg.i{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke
 </div>
 
 <div class="scrim hide" id="scrim"></div>
-<nav id="drawer" aria-label="Folders and settings"></nav>
+<nav id="drawer" aria-label="Accounts, folders and settings"></nav>
 <section id="reader" aria-label="Email"></section>
 
 <section id="compose" aria-label="Compose">
@@ -236,6 +250,7 @@ svg.i{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke
   <button class="send" id="csend"><svg class="i"><use href="#i-send"/></svg>Send</button>
  </div>
  <div class="cbody">
+  <div class="field" id="fromrow"><label for="cfrom">From</label><select id="cfrom"></select></div>
   <div class="field"><label for="cto">To</label><input id="cto" type="email" multiple list="contacts" autocomplete="off"><button id="ccbtn">Cc</button></div>
   <div class="field hide" id="ccrow"><label for="ccc">Cc</label><input id="ccc" type="email" multiple list="contacts" autocomplete="off"></div>
   <div class="field"><label for="csub">Subject</label><input id="csub" autocomplete="off" spellcheck="true"></div>
@@ -268,6 +283,39 @@ const $ = id => document.getElementById(id);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const ico = n => `<svg class="i"><use href="#i-${n}"/></svg>`;
 
+/* ================= providers ================= */
+const PROVIDERS = {
+  gmail: {name:'Gmail', imap:['imap.gmail.com', 993], smtp:['smtp.gmail.com', 465, 'ssl'], domains:['gmail.com','googlemail.com'], pass:'Gmail app password (16 letters)', ph:'abcd efgh ijkl mnop',
+    how:`<h3>Getting a Gmail app password</h3><ol><li>Turn on <b>2-Step Verification</b> for your Google account: <button class="lk" data-url="https://myaccount.google.com/signinoptions/two-step-verification">open settings</button></li><li>Go to <button class="lk" data-url="https://myaccount.google.com/apppasswords">myaccount.google.com/apppasswords</button>, type <b>Brisk</b> and tap Create.</li><li>Copy the 16-letter code and paste it above.</li></ol>`},
+  virgin: {name:'Virgin Media', imap:['imap.virginmedia.com', 993], smtp:['smtp.virginmedia.com', 465, 'ssl'], domains:['virginmedia.com','virgin.net','ntlworld.com','blueyonder.co.uk'], pass:'Virgin Media Mail app password', ph:'From My Virgin Media',
+    how:`<h3>Getting a Virgin Media Mail app password</h3><ol><li>Sign in to <button class="lk" data-url="https://my.virginmedia.com">My Virgin Media</button>.</li><li>Go to <b>Account settings</b>, then <b>Account details</b>.</li><li>Tap <b>Manage</b> next to <b>Virgin Media Mail app password</b>, then <b>Generate new App password</b>.</li><li>Paste it above. Works for virginmedia.com, virgin.net, ntlworld.com and blueyonder.co.uk addresses.</li></ol>`},
+  yahoo: {name:'Yahoo', imap:['imap.mail.yahoo.com', 993], smtp:['smtp.mail.yahoo.com', 465, 'ssl'], domains:['yahoo.com','yahoo.co.uk','ymail.com','rocketmail.com'], pass:'Yahoo app password', ph:'From Yahoo account security',
+    how:`<h3>Getting a Yahoo app password</h3><ol><li>Open <button class="lk" data-url="https://login.yahoo.com/account/security">Yahoo account security</button>.</li><li>Tap <b>Generate app password</b>, name it <b>Brisk</b>.</li><li>Paste the password above.</li></ol>`},
+  icloud: {name:'iCloud', imap:['imap.mail.me.com', 993], smtp:['smtp.mail.me.com', 587, 'starttls'], domains:['icloud.com','me.com','mac.com'], pass:'iCloud app-specific password', ph:'xxxx-xxxx-xxxx-xxxx',
+    how:`<h3>Getting an iCloud app-specific password</h3><ol><li>Sign in at <button class="lk" data-url="https://account.apple.com">account.apple.com</button>.</li><li>Go to <b>Sign-In and Security</b> → <b>App-Specific Passwords</b> and create one called <b>Brisk</b>.</li><li>Paste it above.</li></ol>`},
+  other: {name:'Other', imap:['', 993], smtp:['', 465, 'ssl'], domains:[], pass:'Password or app password', ph:'',
+    how:`<h3>Any other email</h3><p style="margin:0">Enter the server details from your provider’s help pages (search “<i>your provider</i> IMAP settings”). Most use port 993 for incoming and 465 for outgoing. If your provider offers app passwords, use one.</p>`},
+  proton: {name:'Proton', none:true,
+    how:`<h3>Proton Mail can’t connect here</h3><p style="margin:0">Proton only lets other apps in through Proton Mail Bridge, which runs on a Windows, Mac or Linux computer with a paid plan. There’s no version for phones, so no Android mail app except Proton’s own can open a Proton mailbox. Keep using the Proton app for that address.</p>`}
+};
+let prov = 'gmail';
+function setProv(p, keepEmail) {
+  prov = p; const P = PROVIDERS[p];
+  $('provs').innerHTML = Object.entries(PROVIDERS).map(([k, v]) => `<button type="button" class="prov ${k === p ? 'on' : ''}" data-prov="${k}">${v.name}</button>`).join('');
+  $('lform').classList.toggle('hide', !!P.none);
+  $('custom').classList.toggle('hide', p !== 'other');
+  if (!P.none) { $('lpasslabel').textContent = P.pass; $('lpass').placeholder = P.ph; if (!keepEmail) $('lemail').placeholder = p === 'gmail' ? 'you@gmail.com' : p === 'virgin' ? 'you@virginmedia.com' : 'you@example.com'; }
+  $('how').innerHTML = P.how;
+  $('how').querySelectorAll('[data-url]').forEach(b => b.onclick = () => openUrl(b.dataset.url));
+}
+$('provs').onclick = e => { const b = e.target.closest('[data-prov]'); if (b) setProv(b.dataset.prov); };
+$('lemail').addEventListener('input', e => {
+  const d = (e.target.value.split('@')[1] || '').toLowerCase().trim();
+  const hit = Object.keys(PROVIDERS).find(k => (PROVIDERS[k].domains || []).includes(d));
+  if (hit && hit !== prov) setProv(hit, true);
+  else if (/^(proton\.me|protonmail\.com|pm\.me)$/.test(d) && prov !== 'proton') setProv('proton', true);
+});
+
 /* ================= colour labels ================= */
 const LABELS = {
   meetings:{name:'Meetings',c:'#2e8bd6',kw:['meeting','call','agenda','calendar','invite','invitation','sync','catch up','zoom','teams','webinar','appointment']},
@@ -278,6 +326,7 @@ const LABELS = {
   personal:{name:'Personal',c:'#c2410c',kw:['mum','dad','birthday','dinner','weekend','party','love','mate','family']},
   news:{name:'Newsletters',c:'#7b8aa0',kw:['newsletter','unsubscribe','weekly','digest','edition','% off','sale','deals','offer']}
 };
+const ACOL = ['#2e8bd6', '#e8336b', '#0f9a90', '#d98a00', '#5b6cff', '#c2410c'];
 let rules = ls.get('brisk-rules', []);
 function classify(m) {
   const from = (m.from + ' ' + m.email).toLowerCase(), subj = (m.subj || '').toLowerCase();
@@ -296,22 +345,24 @@ function classify(m) {
 }
 
 /* ================= state ================= */
-const VIEWS = [['inbox','Inbox','inbox'],['starred','Starred','star'],['important','Important','shield'],['sent','Sent','send'],['drafts','Drafts','pen'],['all','All mail','archive'],['spam','Spam','spam'],['trash','Bin','trash']];
-const S = {acct:null, sp:{inbox:'INBOX'}, labels:[], view:'inbox', path:'INBOX', items:[], total:0, filter:null, sel:null, query:'', server:null, sbusy:false, cur:null, loading:false, showImg:false, plain:false};
-let cache = ls.get('brisk-cache', {});
+const VIEWS = [['inbox','Inbox','inbox'],['starred','Starred','star'],['important','Important','shield'],['sent','Sent','send'],['drafts','Drafts','pen'],['archive','Archive','archive'],['all','All mail','archive'],['spam','Spam','spam'],['trash','Bin','trash']];
+const S = {accounts:[], folders:{}, acct:'all', view:'inbox', src:[], items:[], more:false, filter:null, sel:null, query:'', server:null, sbusy:0, cur:null, loading:false, showImg:false, plain:false};
+let cache = ls.get('brisk-cache2', {});
 let settings = ls.get('brisk-settings', {name:'', sig:'', images:false});
 let trusted = new Set(ls.get('brisk-trusted', []));
-const key = m => m.folder + '|' + m.uid;
+const key = m => m.acct + '|' + m.folder + '|' + m.uid;
+const ck = (acct, path) => acct + '|' + path;
 const isWide = () => matchMedia('(min-width:900px)').matches;
-function saveCache() {
-  for (const p in cache) cache[p] = cache[p].slice(0, 300);
-  ls.set('brisk-cache', cache);
-}
+const accById = id => S.accounts.find(a => a.id === id);
+const spOf = id => (S.folders[id] && S.folders[id].special) || {inbox:'INBOX'};
+const acol = id => ACOL[Math.max(0, S.accounts.findIndex(a => a.id === id)) % ACOL.length];
+const multi = () => S.accounts.length > 1;
+function saveCache() { for (const p in cache) cache[p] = cache[p].slice(0, 300); ls.set('brisk-cache2', cache); }
 function allCached() {
   const seen = new Set(), out = [];
-  for (const p in cache) for (const m of cache[p]) {
-    const sig = m.email + '|' + m.subj + '|' + m.t;
-    if (!seen.has(sig)) { seen.add(sig); out.push(m); }
+  for (const p in cache) {
+    if (!accById(p.split('|')[0])) continue;
+    for (const m of cache[p]) { const sig = m.acct + '|' + m.email + '|' + m.subj + '|' + m.t; if (!seen.has(sig)) { seen.add(sig); out.push(m); } }
   }
   return out;
 }
@@ -337,23 +388,27 @@ function parse(q) {
   return o;
 }
 const colourOf = v => Object.keys(LABELS).find(k => LABELS[k].name.toLowerCase().startsWith(v) || k.startsWith(v));
+function opsOk(m, o) {
+  const from = (m.from + ' ' + m.email).toLowerCase();
+  for (const [k, v] of o.ops) {
+    if (k === 'from' && !from.includes(v)) return false;
+    if (k === 'to' && !(m.to || '').toLowerCase().includes(v)) return false;
+    if (k === 'subject' && !(m.subj || '').toLowerCase().includes(v)) return false;
+    if (k === 'label') { const c = colourOf(v); if (c && m.label !== c) return false; }
+    if (k === 'has' && v.startsWith('attach') && !m.att) return false;
+    if (k === 'is' && ((v === 'unread' && m.seen) || (v === 'read' && !m.seen) || (v === 'starred' && !m.star))) return false;
+    if (k === 'before' || k === 'after') { const d = new Date(v.replace(/\//g, '-')).getTime(); if (!isNaN(d) && (k === 'before' ? m.t >= d : m.t < d + 864e5)) return false; }
+  }
+  return true;
+}
 function localSearch(list, q) {
   const o = parse(q), out = [];
   for (const m of list) {
+    if (!opsOk(m, o)) continue;
     const f = {subj:(m.subj||'').toLowerCase(), from:(m.from + ' ' + m.email).toLowerCase(), body:(m.snip||'').toLowerCase()};
     const all = f.subj + ' ' + f.from + ' ' + f.body;
-    let ok = true;
-    for (const [k, v] of o.ops) {
-      if (k === 'from' && !f.from.includes(v)) ok = false;
-      if (k === 'to' && !(m.to||'').toLowerCase().includes(v)) ok = false;
-      if (k === 'subject' && !f.subj.includes(v)) ok = false;
-      if (k === 'label') { const c = colourOf(v); if (c && m.label !== c) ok = false; }
-      if (k === 'has' && v.startsWith('attach') && !m.att) ok = false;
-      if (k === 'is' && ((v === 'unread' && m.seen) || (v === 'read' && !m.seen) || (v === 'starred' && !m.star))) ok = false;
-      if (k === 'before' || k === 'after') { const d = new Date(v.replace(/\//g, '-')).getTime(); if (!isNaN(d) && (k === 'before' ? m.t >= d : m.t < d + 864e5)) ok = false; }
-    }
-    if (!ok || o.neg.some(n => all.includes(n)) || o.phrases.some(p => !all.includes(p))) continue;
-    let score = o.phrases.length * 5 + o.ops.length; const hits = [...o.phrases];
+    if (o.neg.some(n => all.includes(n)) || o.phrases.some(p => !all.includes(p))) continue;
+    let score = o.phrases.length * 5 + o.ops.length, ok = true; const hits = [...o.phrases];
     let words = null;
     for (const t of o.terms) {
       let s = 0;
@@ -379,22 +434,23 @@ function hl(text, hits) {
 }
 
 /* ================= list ================= */
-const NOW = () => new Date();
 function fmt(t) {
-  const d = new Date(t), n = NOW();
+  const d = new Date(t), n = new Date();
   if (d.toDateString() === n.toDateString()) return d.toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'});
   if (d.getFullYear() === n.getFullYear()) return d.toLocaleDateString('en-GB', {day:'numeric', month:'short'});
   return d.toLocaleDateString('en-GB');
 }
 let shown = [];
 function rowHtml(m, hits) {
-  const L = LABELS[m.label] || LABELS.work;
-  const who = S.view === 'sent' || S.view === 'drafts' ? 'To: ' + (m.to || '') : m.from;
+  const L = LABELS[m.label] || LABELS.work, sp = spOf(m.acct);
+  const who = m.folder === sp.sent || m.folder === sp.drafts ? 'To: ' + (m.to || '') : m.from;
+  const a = accById(m.acct);
+  const badge = multi() && (S.acct === 'all' || S.query) && a ? `<span class="abadge" style="background:${acol(m.acct)}" title="${esc(a.email)}">${esc(({gmail:'G',virgin:'V',yahoo:'Y',icloud:'i'})[a.provider] || a.email[0].toUpperCase())}</span>` : '';
   return `<div class="rw" data-k="${esc(key(m))}"><div class="under"><span>${ico('archive')}</span><span>${ico('trash')}</span></div>
   <div class="row ${m.seen ? '' : 'unread'} ${S.sel === key(m) ? 'sel' : ''}" role="listitem" tabindex="0">
    <span class="bar" style="background:${L.c}"></span>
    <span class="from">${hl(who, hits)}</span>
-   <span class="time">${m.star ? `<span class="star">★</span>` : ''}${m.att ? ico('clip') : ''}${fmt(m.t)}</span>
+   <span class="time">${m.star ? `<span class="star">★</span>` : ''}${m.att ? ico('clip') : ''}${fmt(m.t)}${badge}</span>
    <span class="subj"><span class="tag" style="background:${L.c}">${L.name}</span>${hl(m.subj, hits)}</span>
    <span class="snip">${hl(m.snip || ' ', hits)}</span></div></div>`;
 }
@@ -402,69 +458,89 @@ function renderChips() {
   $('chips').innerHTML = `<button class="chip ${S.filter ? '' : 'on'}" data-l="">All</button>` +
     Object.entries(LABELS).map(([k, L]) => `<button class="chip ${S.filter === k ? 'on' : ''}" data-l="${k}"><span class="dot" style="background:${L.c}"></span>${L.name}</button>`).join('');
 }
+function viewTitle() {
+  if (S.acct === 'all') return multi() ? 'All inboxes' : 'Inbox';
+  const v = VIEWS.find(x => x[0] === S.view), a = accById(S.acct);
+  const name = S.view === 'label' ? S.src[0].path.replace(/^\[(Gmail|Google Mail)\]\//, '') : v ? v[1] : '';
+  return name + (multi() && a ? ' · ' + a.email : '');
+}
 function renderList() {
-  let html = '', stat;
+  let html, stat;
   if (S.query) {
     const t0 = performance.now();
     const local = localSearch(allCached(), S.query);
     const ms = (performance.now() - t0).toFixed(0);
-    const sigs = new Set(local.map(r => r.m.email + '|' + r.m.subj + '|' + r.m.t));
-    let server = (S.server || []).filter(m => !sigs.has(m.email + '|' + m.subj + '|' + m.t));
-    const lab = parse(S.query).ops.find(o => o[0] === 'label' && colourOf(o[1]));
-    if (lab) server = server.filter(m => m.label === colourOf(lab[1]));
-    const terms = parse(S.query).terms.concat(parse(S.query).phrases);
+    const sigs = new Set(local.map(r => r.m.acct + '|' + r.m.email + '|' + r.m.subj + '|' + r.m.t));
+    const o = parse(S.query);
+    const server = (S.server || []).filter(m => !sigs.has(m.acct + '|' + m.email + '|' + m.subj + '|' + m.t) && opsOk(m, o));
+    const terms = o.terms.concat(o.phrases);
     shown = local.map(r => r.m).concat(server);
     html = local.map(r => rowHtml(r.m, r.hits)).join('') + server.map(m => rowHtml(m, terms)).join('');
-    stat = `${local.length} instant (${ms} ms)` + (DEMO ? '' : S.sbusy ? ' · searching all of Gmail…' : S.server ? ` · ${server.length} more from Gmail` : '');
+    stat = `${local.length} instant (${ms} ms)` + (DEMO ? '' : S.sbusy ? ` · searching ${multi() ? 'all accounts' : 'the server'}…` : S.server ? ` · ${server.length} more from the server` : '');
     if (!shown.length && !S.sbusy) html = `<div class="empty">Nothing matches “${esc(S.query)}”.<br>Try fewer words, or remove an operator.</div>`;
   } else {
     shown = S.filter ? S.items.filter(m => m.label === S.filter) : S.items;
     html = shown.map(m => rowHtml(m)).join('');
     if (!shown.length) html = `<div class="empty">${S.loading ? 'Loading…' : S.filter ? 'No ' + LABELS[S.filter].name.toLowerCase() + ' here.' : 'All clear. Nothing here.'}</div>`;
-    else if (S.items.length < S.total) html += `<button class="more" id="more">Load older emails</button>`;
-    const v = VIEWS.find(x => x[0] === S.view);
+    else if (S.more) html += `<button class="more" id="more">Load older emails</button>`;
     const unread = S.items.filter(m => !m.seen).length;
-    stat = (v ? v[1] : S.path) + (S.filter ? ' · ' + LABELS[S.filter].name : '') + (unread ? ` · ${unread} unread` : '') + (S.loading ? ' · syncing…' : '');
+    stat = viewTitle() + (S.filter ? ' · ' + LABELS[S.filter].name : '') + (unread ? ` · ${unread} unread` : '') + (S.loading ? ' · syncing…' : '');
   }
   $('rows').innerHTML = html;
   $('stat').textContent = stat;
 }
 
 /* ================= loading ================= */
+const PAGE = 40;
+function sources() {
+  if (S.acct === 'all') return S.accounts.map(a => ({acct: a.id, path: 'INBOX'}));
+  return S.src;
+}
 async function loadView(reset) {
-  const path = S.path;
-  if (reset) { S.items = withLabel((cache[path] || []).slice()); S.total = S.items.length; }
+  const src = sources(), token = S.src = src;
+  if (reset) { S.items = withLabel(src.flatMap(s => (cache[ck(s.acct, s.path)] || []).slice())).sort((a, b) => b.t - a.t); }
   S.loading = true; renderList();
-  try {
-    const r = await call('list', {folder: path, offset: 0, count: 50});
-    if (path !== S.path) return;
-    const old = new Map((cache[path] || []).map(m => [key(m), m]));
-    const items = r.items.map(m => { const o = old.get(key(m)); if (o && o.snip) m.snip = o.snip; return m; });
-    withLabel(items);
-    if (pending) { const gone = new Set(pending.items.map(key)); S.items = items.filter(m => !gone.has(key(m))); } else S.items = items;
-    S.total = r.total; cache[path] = items; saveCache();
-    snippets(path, items);
-  } catch (e) { toast(e.message); }
-  S.loading = false; renderList();
+  const results = await Promise.all(src.map(async s => {
+    try {
+      const r = await call('list', {acct: s.acct, folder: s.path, offset: 0, count: PAGE});
+      const old = new Map((cache[ck(s.acct, s.path)] || []).map(m => [key(m), m]));
+      const items = withLabel(r.items.map(m => { const o = old.get(key(m)); if (o && o.snip != null) m.snip = o.snip; return m; }));
+      cache[ck(s.acct, s.path)] = items;
+      s.total = r.total; s.loaded = items.length;
+      return items;
+    } catch (e) { toast((multi() ? (accById(s.acct) || {}).email + ': ' : '') + e.message); s.total = 0; s.loaded = 0; return (cache[ck(s.acct, s.path)] || []); }
+  }));
+  if (S.src !== token) return;
+  let items = results.flat().sort((a, b) => b.t - a.t);
+  if (pending) { const gone = new Set(pending.items.map(key)); items = items.filter(m => !gone.has(key(m))); }
+  S.items = items; S.more = src.some(s => s.loaded < s.total);
+  saveCache(); S.loading = false; renderList();
+  src.forEach(s => snippets(s.acct, s.path, cache[ck(s.acct, s.path)] || []));
 }
 async function loadMore() {
-  const path = S.path;
-  try {
-    const r = await call('list', {folder: path, offset: S.items.length, count: 50});
-    const have = new Set(S.items.map(key));
-    const add = withLabel(r.items.filter(m => !have.has(key(m))));
-    S.items = S.items.concat(add); S.total = r.total;
-    cache[path] = S.items.slice(); saveCache(); renderList(); snippets(path, add);
-  } catch (e) { toast(e.message); }
+  const src = S.src;
+  await Promise.all(src.filter(s => s.loaded < s.total).map(async s => {
+    try {
+      const r = await call('list', {acct: s.acct, folder: s.path, offset: s.loaded, count: PAGE});
+      const have = new Set(S.items.map(key));
+      const add = withLabel(r.items.filter(m => !have.has(key(m))));
+      s.loaded += r.items.length; s.total = r.total;
+      S.items = S.items.concat(add);
+      cache[ck(s.acct, s.path)] = (cache[ck(s.acct, s.path)] || []).concat(add);
+      snippets(s.acct, s.path, add);
+    } catch (e) { toast(e.message); }
+  }));
+  S.items.sort((a, b) => b.t - a.t); S.more = src.some(s => s.loaded < s.total);
+  saveCache(); renderList();
 }
-async function snippets(path, items) {
+async function snippets(acct, path, items) {
   const need = items.filter(m => m.snip == null);
   for (let i = 0; i < need.length; i += 15) {
     const batch = need.slice(i, i + 15);
     try {
-      const r = await call('snippets', {folder: path, uids: batch.map(m => m.uid)});
+      const r = await call('snippets', {acct, folder: path, uids: batch.map(m => m.uid)});
       for (const m of batch) { m.snip = r[m.uid] || ''; m.label = classify(m); }
-      saveCache(); if (!S.query || S.server) renderList();
+      saveCache(); renderList();
     } catch (e) { return; }
   }
 }
@@ -476,12 +552,17 @@ function toast(msg, undo) {
   $('toast').classList.add('show'); clearTimeout(tt);
   tt = setTimeout(() => { $('toast').classList.remove('show'); }, undo ? 4500 : 3200);
 }
-function targetFor(op) { return op === 'archive' ? S.sp.all : op === 'trash' ? S.sp.trash : op === 'spam' ? S.sp.spam : op === 'inbox' ? 'INBOX' : null; }
+function targetFor(op, acct) {
+  const sp = spOf(acct), a = accById(acct);
+  if (op === 'archive') return a && a.gmail ? sp.all : (sp.archive || 'Archive');
+  if (op === 'trash') return sp.trash || 'Trash';
+  if (op === 'spam') return sp.spam || null;
+  if (op === 'inbox') return 'INBOX';
+  return null;
+}
 function move(items, op) {
-  const to = targetFor(op);
-  if (!to) { toast('That folder isn’t available on this account'); return; }
-  items = items.filter(m => m.folder !== to);
-  if (!items.length) return;
+  items = items.filter(m => { const to = targetFor(op, m.acct); return to && m.folder !== to; });
+  if (!items.length) { toast(op === 'spam' ? 'No spam folder on this account' : 'Already there'); return; }
   flush();
   const ks = new Set(items.map(key));
   const before = S.items.slice(), beforeServer = S.server ? S.server.slice() : null;
@@ -495,26 +576,27 @@ function move(items, op) {
   }
   renderList();
   const word = {archive:'Archived', trash:'Moved to Bin', spam:'Reported as spam', inbox:'Moved to Inbox'}[op];
-  pending = {items, to, timer: setTimeout(flush, 4600), undo() { S.items = before; S.server = beforeServer; renderList(); }};
+  pending = {items, op, timer: setTimeout(flush, 4600), undo() { S.items = before; S.server = beforeServer; renderList(); }};
   toast(items.length > 1 ? `${word} ${items.length} emails` : word, true);
 }
 function flush() {
   if (!pending) return;
   const p = pending; pending = null; clearTimeout(p.timer);
-  const byFolder = {};
-  for (const m of p.items) (byFolder[m.folder] = byFolder[m.folder] || []).push(m);
-  for (const f in byFolder) {
-    const uids = byFolder[f].map(m => m.uid);
-    call('act', {folder: f, uids, op: 'move', to: p.to}).catch(e => toast('Couldn’t move: ' + e.message));
-    if (cache[f]) cache[f] = cache[f].filter(m => !uids.includes(m.uid));
+  const groups = {};
+  for (const m of p.items) { const g = m.acct + '\n' + m.folder; (groups[g] = groups[g] || []).push(m); }
+  for (const g in groups) {
+    const [acct, folder] = g.split('\n'), uids = groups[g].map(m => m.uid), to = targetFor(p.op, acct);
+    call('act', {acct, folder, uids, op: 'move', to}).catch(e => toast('Couldn’t move: ' + e.message));
+    const c = cache[ck(acct, folder)]; if (c) cache[ck(acct, folder)] = c.filter(m => !uids.includes(m.uid));
+    delete cache[ck(acct, to)];
   }
-  delete cache[p.to]; saveCache();
+  saveCache();
 }
 function flag(m, op) {
   if (op === 'star' || op === 'unstar') m.star = op === 'star';
   if (op === 'read' || op === 'unread') m.seen = op === 'read';
   renderList(); if (S.sel === key(m)) renderReader();
-  call('act', {folder: m.folder, uids: [m.uid], op}).catch(e => toast(e.message));
+  call('act', {acct: m.acct, folder: m.folder, uids: [m.uid], op}).catch(e => toast(e.message));
   saveCache();
 }
 $('undo').onclick = () => { if (pending) { clearTimeout(pending.timer); pending.undo(); pending = null; } $('toast').classList.remove('show'); };
@@ -536,7 +618,7 @@ function facts(text) {
   (t.match(/\b\d{6}\b(?=[^\n]{0,40}(code|verification|one-time|OTP))|\b(?:code|OTP)(?: is)?:?\s*(\d{4,8})\b/gi) || []).slice(0, 1).forEach(x => f.push('🔑 ' + x.match(/\d{4,8}/)[0]));
   return [...new Set(f)];
 }
-const BRANDS = {hmrc:['gov.uk'], dvla:['gov.uk'], 'tv licensing':['tvlicensing.co.uk'], paypal:['paypal.com','paypal.co.uk'], amazon:['amazon.co.uk','amazon.com','amazon.de'], 'royal mail':['royalmail.com','royalmail.co.uk'], dpd:['dpd.co.uk','dpdgroup.com','dpd.com'], evri:['evri.com'], netflix:['netflix.com'], apple:['apple.com'], microsoft:['microsoft.com','microsoftonline.com'], 'british gas':['britishgas.co.uk'], barclays:['barclays.co.uk','barclays.com'], lloyds:['lloydsbank.co.uk','lloydsbank.com'], hsbc:['hsbc.co.uk','hsbc.com'], natwest:['natwest.com'], santander:['santander.co.uk'], monzo:['monzo.com'], halifax:['halifax.co.uk'], google:['google.com'], 'o2 ':['o2.co.uk'], vodafone:['vodafone.co.uk','vodafone.com'], ee:['ee.co.uk']};
+const BRANDS = {hmrc:['gov.uk'], dvla:['gov.uk'], 'tv licensing':['tvlicensing.co.uk'], paypal:['paypal.com','paypal.co.uk'], amazon:['amazon.co.uk','amazon.com','amazon.de'], 'royal mail':['royalmail.com','royalmail.co.uk'], dpd:['dpd.co.uk','dpdgroup.com','dpd.com'], evri:['evri.com'], netflix:['netflix.com'], apple:['apple.com'], microsoft:['microsoft.com','microsoftonline.com'], 'british gas':['britishgas.co.uk'], barclays:['barclays.co.uk','barclays.com'], lloyds:['lloydsbank.co.uk','lloydsbank.com'], hsbc:['hsbc.co.uk','hsbc.com'], natwest:['natwest.com'], santander:['santander.co.uk'], monzo:['monzo.com'], halifax:['halifax.co.uk'], google:['google.com'], 'virgin media':['virginmedia.com','virginmedia.co.uk'], vodafone:['vodafone.co.uk','vodafone.com']};
 function scam(m) {
   const name = ' ' + (m.from || '').toLowerCase() + ' ', dom = (m.email.split('@')[1] || '').toLowerCase();
   for (const [b, ds] of Object.entries(BRANDS)) {
@@ -561,7 +643,7 @@ function openMail(m) {
   renderList(); renderReader();
   $('reader').classList.add('open');
   const k = key(m);
-  call('body', {folder: m.folder, uid: m.uid}).then(b => {
+  call('body', {acct: m.acct, folder: m.folder, uid: m.uid}).then(b => {
     if (S.sel !== k) return;
     S.cur = b; if (!m.snip) { m.snip = (b.text || '').replace(/\s+/g, ' ').slice(0, 600); saveCache(); }
     renderReader();
@@ -574,7 +656,7 @@ function renderReader() {
     r.innerHTML = `<div class="rbody"><div class="empty" style="margin-top:14vh"><h2 style="font-weight:300;font-size:30px;color:var(--ink);margin:0 0 6px">Inbox, under control.</h2>Pick an email to read it.<br>Press <b>c</b> to write or <b>/</b> to search.</div></div>`;
     return;
   }
-  const L = LABELS[m.label] || LABELS.work, b = S.cur, text = b && !b.error ? b.text : m.snip;
+  const L = LABELS[m.label] || LABELS.work, b = S.cur, text = b && !b.error ? b.text : m.snip, sp = spOf(m.acct), a = accById(m.acct);
   const fx = facts((m.subj || '') + '\n' + (text || '')), warn = scam(m);
   let content;
   if (!b) content = `<div class="loading">Loading…</div>`;
@@ -584,17 +666,18 @@ function renderReader() {
     content = `<div class="imgbar">${d.blocked && !S.showImg ? `<span>${d.blocked} remote image${d.blocked > 1 ? 's' : ''} hidden to block trackers</span><button data-a="img">Show</button><button data-a="trust">Always for this sender</button>` : ''}<button data-a="plain">Plain text</button></div><iframe class="frame" id="frame" sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox" title="Email content"></iframe>`;
     setTimeout(() => mountFrame(d.doc), 0);
   } else content = `${b.html ? `<div class="imgbar"><button data-a="plain">Original layout</button></div>` : ''}<div class="text">${linkify(esc(b.text || '(empty)'))}</div>`;
-  const atts = b && b.attachments && b.attachments.length ? `<div class="atts">${b.attachments.map(a => `<button class="att" data-att="${a.idx}">${ico('clip')}<span>${esc(a.name)}</span><small style="color:var(--mute)">${a.size ? Math.max(1, Math.round(a.size / 1024 * .75)) + ' KB' : ''}</small></button>`).join('')}</div>` : '';
-  const quick = !warn && m.folder !== S.sp.sent && (QUICK[m.label] || []).length ? `<div class="quick">${QUICK[m.label].map(q => `<button data-qr="${esc(q)}">${esc(q)}</button>`).join('')}</div>` : '';
+  const atts = b && b.attachments && b.attachments.length ? `<div class="atts">${b.attachments.map(x => `<button class="att" data-att="${x.idx}">${ico('clip')}<span>${esc(x.name)}</span><small style="color:var(--mute)">${x.size ? Math.max(1, Math.round(x.size / 1024 * .75)) + ' KB' : ''}</small></button>`).join('')}</div>` : '';
+  const quick = !warn && m.folder !== sp.sent && (QUICK[m.label] || []).length ? `<div class="quick">${QUICK[m.label].map(q => `<button data-qr="${esc(q)}">${esc(q)}</button>`).join('')}</div>` : '';
   const unsub = b && b.unsub ? `<button class="chip" data-a="unsub" style="margin-top:16px">Unsubscribe from ${esc(m.from)}</button>` : '';
-  const inTrash = m.folder === S.sp.trash || m.folder === S.sp.spam;
+  const inTrash = m.folder === sp.trash || m.folder === sp.spam;
+  const archived = m.folder === targetFor('archive', m.acct);
   r.innerHTML = `<div class="rbar">
     <button class="ib back" data-a="back" aria-label="Back">${ico('back')}</button><span class="sp"></span>
-    ${inTrash ? `<button class="ib" data-a="inbox" aria-label="Move to Inbox" title="Move to Inbox">${ico('inbox')}</button>` : `${m.folder !== S.sp.all ? `<button class="ib" data-a="archive" aria-label="Archive" title="Archive (e)">${ico('archive')}</button>` : ''}<button class="ib" data-a="trash" aria-label="Delete" title="Delete (#)">${ico('trash')}</button><button class="ib" data-a="spam" aria-label="Report spam" title="Spam">${ico('spam')}</button>`}
+    ${inTrash ? `<button class="ib" data-a="inbox" aria-label="Move to Inbox" title="Move to Inbox">${ico('inbox')}</button>` : `${archived ? '' : `<button class="ib" data-a="archive" aria-label="Archive" title="Archive (e)">${ico('archive')}</button>`}<button class="ib" data-a="trash" aria-label="Delete" title="Delete (#)">${ico('trash')}</button>${sp.spam ? `<button class="ib" data-a="spam" aria-label="Report spam" title="Spam">${ico('spam')}</button>` : ''}`}
     <button class="ib" data-a="unread" aria-label="Mark unread" title="Mark unread (u)">${ico('mail')}</button>
     <button class="ib" data-a="star" aria-label="${m.star ? 'Unstar' : 'Star'}" title="Star (s)" style="${m.star ? 'color:#e8a200' : ''}">${ico('star')}</button></div>
    <div class="rbody">
-    <button class="tagbtn" data-a="recolour" title="Change colour"><span class="tag" style="background:${L.c}">${L.name} ▾</span></button>
+    <button class="tagbtn" data-a="recolour" title="Change colour"><span class="tag" style="background:${L.c}">${L.name} ▾</span></button>${multi() && a ? `<span class="acctline"><span class="dot" style="background:${acol(m.acct)}"></span>${esc(a.email)}</span>` : ''}
     <h1>${esc(m.subj)}</h1>
     <div class="meta"><span class="av" style="background:${L.c};color:#fff">${esc((m.from || '?').trim()[0].toUpperCase())}</span>
      <div class="who"><b>${esc(m.from)}</b><span>${esc(m.email)} · ${new Date(m.t).toLocaleString('en-GB', {weekday:'short', day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'})}</span>${b && b.to ? `<span>to ${esc(b.to)}${b.cc ? ', cc ' + esc(b.cc) : ''}</span>` : ''}</div></div>
@@ -621,7 +704,7 @@ function mountFrame(doc) {
   };
   f.srcdoc = doc;
 }
-async function readerAction(a, el) {
+async function readerAction(a) {
   const m = byKey(S.sel); if (!m && a !== 'back') return;
   if (a === 'back') return closeReader();
   if (['archive', 'trash', 'spam', 'inbox'].includes(a)) return move([m], a);
@@ -651,7 +734,7 @@ function unsubscribe(m) {
     if (web) openUrl(web);
     else if (mail) {
       const [to, qs] = mail.split('?'); const p = new URLSearchParams(qs || '');
-      try { await call('send', {to: decodeURIComponent(to), subject: p.get('subject') || 'unsubscribe', body: p.get('body') || 'unsubscribe', name: settings.name}); toast('Unsubscribe email sent'); } catch (e) { toast(e.message); }
+      try { await call('send', {acct: m.acct, to: decodeURIComponent(to), subject: p.get('subject') || 'unsubscribe', body: p.get('body') || 'unsubscribe', name: settings.name}); toast('Unsubscribe email sent'); } catch (e) { toast(e.message); }
     }
     move([m], 'trash');
   }]]);
@@ -660,7 +743,7 @@ function unsubscribe(m) {
 /* ================= swipe ================= */
 let sw = null;
 $('rows').addEventListener('touchstart', e => {
-  const rw = e.target.closest('.rw'); if (!rw || S.query && false) return;
+  const rw = e.target.closest('.rw'); if (!rw) return;
   const t = e.touches[0]; sw = {rw, row: rw.querySelector('.row'), x: t.clientX, y: t.clientY, dx: 0, on: false};
 }, {passive: true});
 $('rows').addEventListener('touchmove', e => {
@@ -675,7 +758,7 @@ $('rows').addEventListener('touchend', () => {
   const m = byKey(s.rw.dataset.k), w = s.rw.clientWidth;
   if (m && Math.abs(s.dx) > w * .3) {
     s.row.style.transform = `translateX(${s.dx > 0 ? w : -w}px)`;
-    setTimeout(() => move([m], s.dx > 0 ? (m.folder === S.sp.all ? 'trash' : 'archive') : 'trash'), 140);
+    setTimeout(() => move([m], s.dx > 0 && m.folder !== targetFor('archive', m.acct) ? 'archive' : 'trash'), 140);
   } else { s.row.style.transform = ''; setTimeout(() => { s.row.style.transition = ''; }, 160); }
   s.rw.dataset.swiped = '1'; setTimeout(() => { delete s.rw.dataset.swiped; }, 60);
 });
@@ -755,14 +838,20 @@ function quoteOf(m, b) {
   const t = (b && b.text) || m.snip || '';
   return `\n\n— On ${new Date(m.t).toLocaleString('en-GB', {day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit'})}, ${m.from} <${m.email}> wrote:\n` + t.split('\n').slice(0, 40).map(l => '> ' + l).join('\n');
 }
+function fillFrom(acct) {
+  $('cfrom').innerHTML = S.accounts.map(a => `<option value="${a.id}" ${a.id === acct ? 'selected' : ''}>${esc(a.email)}</option>`).join('');
+  $('fromrow').classList.toggle('hide', !multi());
+}
 function openCompose(mode = 'new', m = null, prefill = '') {
   flush();
   C = {mode, ref: m, files: [], body: m && S.sel === key(m) ? S.cur : null};
   const sig = settings.sig ? '\n\n-- \n' + settings.sig : '';
   $('ccrow').classList.add('hide'); $('ccc').value = '';
+  fillFrom(m && m.acct ? m.acct : S.acct !== 'all' ? S.acct : (S.accounts[0] || {}).id);
   if (mode === 'reply') {
     $('ctitle').textContent = 'Reply';
-    $('cto').value = (C.body && C.body.replyTo && !C.body.replyTo.includes(S.acct) ? C.body.replyTo : m.email);
+    const me = (accById(m.acct) || {}).email || '';
+    $('cto').value = (C.body && C.body.replyTo && !C.body.replyTo.includes(me) ? C.body.replyTo : m.email);
     $('csub').value = /^re:/i.test(m.subj) ? m.subj : 'Re: ' + m.subj;
     $('cbody').value = (prefill ? prefill + (/[.!?x]$/.test(prefill) ? '' : '.') : '') + sig + quoteOf(m, C.body);
   } else if (mode === 'fwd') {
@@ -772,7 +861,8 @@ function openCompose(mode = 'new', m = null, prefill = '') {
   } else {
     $('ctitle').textContent = 'New message';
     const d = ls.get('brisk-draft', null);
-    $('cto').value = d ? d.to : (m || '');  $('csub').value = d ? d.sub : ''; $('cbody').value = d ? d.body : sig;
+    $('cto').value = d ? d.to : (typeof m === 'string' ? m : ''); $('csub').value = d ? d.sub : ''; $('cbody').value = d ? d.body : sig;
+    if (d && d.from && accById(d.from)) $('cfrom').value = d.from;
   }
   renderFiles(); runCheck(); contacts();
   $('compose').classList.add('open');
@@ -781,9 +871,11 @@ function openCompose(mode = 'new', m = null, prefill = '') {
 function composeMailto(h) {
   const [to, qs] = h.replace(/^mailto:/i, '').split('?'); const p = new URLSearchParams(qs || '');
   try { localStorage.removeItem('brisk-draft'); } catch (e) {}
-  openCompose('new', decodeURIComponent(to)); if (p.get('subject')) $('csub').value = p.get('subject'); if (p.get('body')) $('cbody').value = p.get('body'); runCheck();
+  const m = S.sel && byKey(S.sel);
+  openCompose('new', decodeURIComponent(to)); if (m) $('cfrom').value = m.acct;
+  if (p.get('subject')) $('csub').value = p.get('subject'); if (p.get('body')) $('cbody').value = p.get('body'); runCheck();
 }
-function saveDraft() { if (C.mode === 'new' && $('compose').classList.contains('open')) ls.set('brisk-draft', {to:$('cto').value, sub:$('csub').value, body:$('cbody').value}); }
+function saveDraft() { if (C.mode === 'new' && $('compose').classList.contains('open')) ls.set('brisk-draft', {from:$('cfrom').value, to:$('cto').value, sub:$('csub').value, body:$('cbody').value}); }
 function closeCompose(discard) {
   if (discard) { try { localStorage.removeItem('brisk-draft'); } catch (e) {} }
   $('compose').classList.remove('open'); document.activeElement && document.activeElement.blur();
@@ -799,13 +891,14 @@ function renderFiles() {
 $('cfiles').onclick = e => { const i = e.target.dataset.rm; if (i !== undefined) { C.files.splice(+i, 1); renderFiles(); } };
 $('cfile').onchange = e => {
   for (const f of e.target.files) {
-    if (C.files.reduce((a, x) => a + x.size, 0) + f.size > 20 * 1024 * 1024) { toast('Gmail allows up to 25 MB per email'); break; }
+    if (C.files.reduce((a, x) => a + x.size, 0) + f.size > 20 * 1024 * 1024) { toast('Most providers allow about 20 MB per email'); break; }
     const r = new FileReader();
     r.onload = () => { C.files.push({name: f.name, size: f.size, mime: f.type || 'application/octet-stream', b64: String(r.result).split(',')[1]}); renderFiles(); };
     r.readAsDataURL(f);
   }
   e.target.value = '';
 };
+$('cfrom').onchange = saveDraft;
 $('ccbtn').onclick = () => { $('ccrow').classList.toggle('hide'); $('ccc').focus(); };
 $('cclose').onclick = () => {
   const typed = $('cbody').value.split(/\n-- \n|\n—\s?On /)[0].trim();
@@ -814,7 +907,7 @@ $('cclose').onclick = () => {
 };
 ['cbody', 'csub', 'cto'].forEach(id => $(id).addEventListener('input', () => { clearTimeout(window.__ck); window.__ck = setTimeout(runCheck, 120); }));
 $('csend').onclick = async () => {
-  const to = $('cto').value.trim();
+  const to = $('cto').value.trim(), acct = $('cfrom').value;
   if (!to || !/@/.test(to)) { toast('Add who it’s to'); $('cto').focus(); return; }
   const mine = $('cbody').value.split(/\n—\s?On .+ wrote/)[0];
   const warns = [];
@@ -824,22 +917,33 @@ $('csend').onclick = async () => {
   if (warns.length && !C.confirmed) { dialog(`<p>${warns.map(esc).join('<br>')}</p>`, [['Go back'], ['Send anyway', 'pri', () => { C.confirmed = true; $('csend').click(); }]]); return; }
   C.confirmed = false;
   const btn = $('csend'); btn.disabled = true; btn.lastChild.textContent = 'Sending…';
-  const ref = C.body || {};
+  const ref = C.body || {}, sp = spOf(acct);
   try {
-    await call('send', {to, cc: $('ccc').value.trim(), subject: $('csub').value, body: $('cbody').value, name: settings.name,
+    await call('send', {acct, to, cc: $('ccc').value.trim(), subject: $('csub').value, body: $('cbody').value, name: settings.name, sentFolder: sp.sent || 'Sent',
       inReplyTo: C.mode === 'reply' ? ref.messageId || '' : '', references: C.mode === 'reply' ? ref.references || '' : '', attachments: C.files});
-    closeCompose(true); toast('Sent'); delete cache[S.sp.sent];
+    closeCompose(true); toast(multi() ? 'Sent from ' + (accById(acct) || {}).email : 'Sent'); delete cache[ck(acct, sp.sent || 'Sent')];
   } catch (e) { toast('Not sent: ' + e.message); }
   btn.disabled = false; btn.lastChild.textContent = 'Send';
 };
 
 /* ================= drawer + settings ================= */
 function renderDrawer() {
-  const views = VIEWS.filter(v => v[0] === 'inbox' || S.sp[v[0]]);
-  $('drawer').innerHTML = `<div class="brand">Brisk<b>.</b></div><div class="acct">${esc(S.acct || '')}</div>
+  const accBlock = a => {
+    const sp = spOf(a.id), f = S.folders[a.id] || {labels: []};
+    const views = VIEWS.filter(v => v[0] === 'inbox' || sp[v[0]]);
+    const open = S.acct === a.id || !multi();
+    return `<div class="accsec"><button class="acchead" data-toggle="${a.id}"><span class="dot" style="background:${acol(a.id)}"></span><span>${esc(a.email)}</span><small>${esc((PROVIDERS[a.provider] || PROVIDERS.other).name)}</small></button>
+     <div class="${open ? '' : 'hide'}" id="acc-${a.id}">
+      ${views.map(([k, n, ic]) => `<button class="nav ${S.acct === a.id && S.view === k ? 'on' : ''}" data-acct="${a.id}" data-view="${k}">${ico(ic)}${n}</button>`).join('')}
+      ${f.labels.length ? f.labels.slice(0, 40).map(l => `<button class="nav ${S.acct === a.id && S.view === 'label' && S.src[0] && S.src[0].path === l ? 'on' : ''}" data-acct="${a.id}" data-path="${esc(l)}"><span class="dot" style="background:#8aa3bf;margin:0 6px"></span>${esc(l.replace(/^\[(Gmail|Google Mail)\]\//, ''))}</button>`).join('') : ''}
+      <button class="nav rm" data-rmacct="${a.id}">Remove this account</button>
+     </div></div>`;
+  };
+  $('drawer').innerHTML = `<div class="brand">Brisk<b>.</b></div><div class="acct">${S.accounts.length} account${S.accounts.length === 1 ? '' : 's'}</div>
    <button class="nav" data-compose="1" style="background:var(--pink);color:#fff;font-weight:600;margin-bottom:8px">${ico('pen')}Compose</button>
-   ${views.map(([k, n, ic]) => `<button class="nav ${S.view === k ? 'on' : ''}" data-view="${k}">${ico(ic)}${n}</button>`).join('')}
-   ${S.labels.length ? `<h4>Gmail labels</h4>${S.labels.map(l => `<button class="nav ${S.view === 'label' && S.path === l ? 'on' : ''}" data-path="${esc(l)}"><span class="dot" style="background:#8aa3bf"></span>${esc(l.replace(/^\[Gmail\]\/|^\[Google Mail\]\//, ''))}</button>`).join('')}` : ''}
+   ${multi() ? `<button class="nav ${S.acct === 'all' ? 'on' : ''}" data-allinbox="1">${ico('inbox')}All inboxes</button>` : ''}
+   ${S.accounts.map(accBlock).join('')}
+   <button class="nav addacc" data-addacc="1">+ Add another email account</button>
    <h4>Colour rules</h4>
    <div class="set">${rules.map((r, i) => `<div class="rule"><span class="dot" style="background:${LABELS[r.label].c}"></span><span>${r.field === 'subject' ? 'Subject' : 'From'} has “${esc(r.text)}” → ${LABELS[r.label].name}</span><button data-delrule="${i}" aria-label="Remove rule">✕</button></div>`).join('') || '<div style="color:#8aa3bf;font-size:13px">Tap the colour tag on any email to set a rule, or add one here.</div>'}
     <select id="rfield"><option value="from">If sender contains</option><option value="subject">If subject contains</option></select>
@@ -851,7 +955,6 @@ function renderDrawer() {
     <span>Your name on emails</span><input id="sname" value="${esc(settings.name)}" placeholder="Dave">
     <span>Signature</span><textarea id="ssig" rows="3" placeholder="Sent with Brisk">${esc(settings.sig)}</textarea>
     <label><input type="checkbox" id="simg" ${settings.images ? 'checked' : ''}> Always show remote images</label>
-    <button class="lite" id="logout">Sign out</button>
     <div style="color:#8aa3bf;font-size:12px;margin-top:10px">Brisk ${DEMO ? 'preview' : esc(N.version())}</div>
    </div>`;
 }
@@ -861,20 +964,34 @@ $('scrim').onclick = () => openDrawer(false);
 $('drawer').onclick = e => {
   const t = e.target.closest('button'); if (!t) return;
   if (t.dataset.compose) { openDrawer(false); openCompose(); }
-  if (t.dataset.view) { setView(t.dataset.view, S.sp[t.dataset.view] || 'INBOX'); openDrawer(false); }
-  if (t.dataset.path) { setView('label', t.dataset.path); openDrawer(false); }
+  if (t.dataset.allinbox) { setView('all', 'inbox'); openDrawer(false); }
+  if (t.dataset.toggle) { const el = $('acc-' + t.dataset.toggle); if (el) el.classList.toggle('hide'); }
+  if (t.dataset.view) { setView(t.dataset.acct, t.dataset.view, spOf(t.dataset.acct)[t.dataset.view] || 'INBOX'); openDrawer(false); }
+  if (t.dataset.path) { setView(t.dataset.acct, 'label', t.dataset.path); openDrawer(false); }
+  if (t.dataset.addacc) { openDrawer(false); showLogin(true); }
+  if (t.dataset.rmacct) {
+    const a = accById(t.dataset.rmacct);
+    dialog(`<p>Remove <b>${esc(a.email)}</b> from Brisk? Your emails stay on the server.</p>`, [['Cancel'], ['Remove', 'pri', async () => {
+      await call('logout', {acct: a.id});
+      for (const p in cache) if (p.startsWith(a.id + '|')) delete cache[p];
+      saveCache(); delete S.folders[a.id]; ls.set('brisk-folders2', S.folders);
+      S.accounts = S.accounts.filter(x => x.id !== a.id);
+      if (!S.accounts.length) { location.reload(); return; }
+      setView('all', 'inbox'); renderDrawer(); toast('Removed ' + a.email);
+    }]]);
+  }
   if (t.dataset.delrule !== undefined) { rules.splice(+t.dataset.delrule, 1); ls.set('brisk-rules', rules); relabel(); }
   if (t.id === 'radd') { const tx = $('rtext').value.trim(); if (!tx) return; rules.unshift({field: $('rfield').value, text: tx, label: $('rlabel').value}); ls.set('brisk-rules', rules); relabel(); }
-  if (t.id === 'logout') dialog('<p>Sign out of Brisk on this phone?</p>', [['Cancel'], ['Sign out', 'pri', async () => { await call('logout'); cache = {}; ls.set('brisk-cache', {}); location.reload(); }]]);
 };
 $('drawer').addEventListener('change', e => {
-  if (e.target.id === 'sname') settings.name = e.target.value.trim();
+  if (e.target.id === 'sname') { settings.name = e.target.value.trim(); updateAvatar(); }
   if (e.target.id === 'ssig') settings.sig = e.target.value.trim();
   if (e.target.id === 'simg') settings.images = e.target.checked;
   ls.set('brisk-settings', settings);
 });
-function setView(v, path) {
-  flush(); S.view = v; S.path = path; S.filter = null; S.sel = null; S.query = ''; S.server = null; $('q').value = '';
+function setView(acct, view, path) {
+  flush(); S.acct = acct; S.view = view; S.src = acct === 'all' ? [] : [{acct, path: path || 'INBOX'}];
+  S.filter = null; S.sel = null; S.query = ''; S.server = null; $('q').value = '';
   $('reader').classList.remove('open'); renderChips(); renderReader(); loadView(true);
 }
 
@@ -897,10 +1014,10 @@ $('rows').onclick = e => {
 };
 $('rows').onkeydown = e => { if (e.key === 'Enter') { const rw = e.target.closest('.rw'); const m = rw && byKey(rw.dataset.k); if (m) openMail(m); } };
 $('reader').onclick = e => {
-  const a = e.target.closest('[data-a]'); if (a) return readerAction(a.dataset.a, a);
+  const a = e.target.closest('[data-a]'); if (a) return readerAction(a.dataset.a);
   const q = e.target.closest('[data-qr]'); if (q) return openCompose('reply', byKey(S.sel), q.dataset.qr);
   const at = e.target.closest('[data-att]');
-  if (at) { const m = byKey(S.sel); toast('Saving…'); call('attachment', {folder: m.folder, uid: m.uid, idx: +at.dataset.att}).then(r => toast('Saved to ' + r.saved)).catch(er => toast(er.message)); }
+  if (at) { const m = byKey(S.sel); toast('Saving…'); call('attachment', {acct: m.acct, folder: m.folder, uid: m.uid, idx: +at.dataset.att}).then(r => toast('Saved to ' + r.saved)).catch(er => toast(er.message)); }
   const ln = e.target.closest('a[data-ext]'); if (ln) { e.preventDefault(); openUrl(ln.href); }
 };
 $('fab').onclick = () => openCompose();
@@ -909,25 +1026,36 @@ let qt, st;
 $('q').addEventListener('input', e => {
   S.query = e.target.value.trim(); S.server = null; clearTimeout(qt); clearTimeout(st);
   qt = setTimeout(renderList, 60);
-  if (S.query && !DEMO) { S.sbusy = true; st = setTimeout(runServer, 550); } else S.sbusy = false;
+  if (S.query && !DEMO) { S.sbusy = 1; st = setTimeout(runServer, 550); } else S.sbusy = 0;
 });
 async function runServer() {
-  const q = S.query, gq = gmailQuery(q); if (!q) return;
-  if (!gq) { S.sbusy = false; S.server = []; renderList(); return; }
-  S.sbusy = true; renderList();
-  try {
-    const r = await call('search', {folder: S.sp.all || 'INBOX', query: gq, count: 80});
-    if (q !== S.query) return;
-    const known = new Map(allCached().map(m => [m.email + '|' + m.subj + '|' + m.t, m]));
-    S.server = withLabel(r.items.map(m => { const k = known.get(m.email + '|' + m.subj + '|' + m.t); if (k && k.snip) m.snip = k.snip; return m; }));
-    S.sbusy = false; renderList();
-    snippets(S.sp.all || 'INBOX', S.server);
-  } catch (e) { S.sbusy = false; S.server = []; renderList(); toast(e.message); }
+  const q = S.query; if (!q) return;
+  const o = parse(q), terms = o.terms.concat(o.phrases), gq = gmailQuery(q);
+  const jobs = [];
+  for (const a of S.accounts) {
+    const sp = spOf(a.id);
+    if (a.gmail) { if (gq) jobs.push({acct: a.id, folder: sp.all || 'INBOX', query: gq}); }
+    else if (terms.length) [...new Set(['INBOX', sp.archive, sp.sent].filter(Boolean))].forEach(f => jobs.push({acct: a.id, folder: f, terms}));
+  }
+  if (!jobs.length) { S.sbusy = 0; S.server = []; renderList(); return; }
+  S.sbusy = jobs.length; S.server = []; renderList();
+  const known = new Map(allCached().map(m => [key(m), m]));
+  await Promise.all(jobs.map(async j => {
+    try {
+      const r = await call('search', {...j, count: 60});
+      if (q !== S.query) return;
+      const items = withLabel(r.items.map(m => { const k = known.get(key(m)); if (k && k.snip) m.snip = k.snip; return m; }));
+      const have = new Set(S.server.map(key));
+      S.server = S.server.concat(items.filter(m => !have.has(key(m)))).sort((a, b) => b.t - a.t);
+      snippets(j.acct, j.folder, items);
+    } catch (e) { if (q === S.query) toast(((accById(j.acct) || {}).email || '') + ': ' + e.message); }
+    S.sbusy = Math.max(0, S.sbusy - 1); if (q === S.query) renderList();
+  }));
 }
 document.addEventListener('keydown', e => {
   const typing = /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName);
   if (e.key === 'Escape') { window.briskBack(); return; }
-  if (typing || e.metaKey || e.ctrlKey || e.altKey || $('compose').classList.contains('open') || !$('dlg').classList.contains('hide')) return;
+  if (typing || e.metaKey || e.ctrlKey || e.altKey || $('compose').classList.contains('open') || !$('dlg').classList.contains('hide') || !$('login').classList.contains('hide')) return;
   const i = shown.findIndex(m => key(m) === S.sel), m = S.sel && byKey(S.sel), k = e.key;
   const go = n => { if (n) { openMail(n); const el = document.querySelector(`.rw[data-k="${CSS.escape(key(n))}"]`); if (el) el.scrollIntoView({block: 'nearest'}); } };
   if (k === '/') { e.preventDefault(); $('q').focus(); }
@@ -943,61 +1071,87 @@ document.addEventListener('keydown', e => {
 });
 window.briskBack = () => {
   if (!$('dlg').classList.contains('hide')) { closeDialog(); return true; }
+  if (!$('login').classList.contains('hide') && S.accounts.length) { showLogin(false); return true; }
   if ($('compose').classList.contains('open')) { $('cclose').click(); return true; }
   if ($('drawer').classList.contains('open')) { openDrawer(false); return true; }
   if ($('reader').classList.contains('open') && !isWide()) { closeReader(); return true; }
   if (S.query) { $('q').value = ''; S.query = ''; S.server = null; renderList(); return true; }
   if (S.filter) { S.filter = null; renderChips(); renderList(); return true; }
-  if (S.view !== 'inbox') { setView('inbox', 'INBOX'); return true; }
+  if (S.acct !== 'all' || S.view !== 'inbox') { setView(multi() ? 'all' : S.accounts[0].id, 'inbox', 'INBOX'); return true; }
   flush(); return false;
 };
-setInterval(() => { if (!document.hidden && S.acct && !S.query && !pending) loadView(false); }, 90000);
+setInterval(() => { if (!document.hidden && S.accounts.length && !S.query && !pending && $('login').classList.contains('hide')) loadView(false); }, 90000);
 
-/* ================= sign in + start ================= */
-document.querySelectorAll('[data-url]').forEach(b => b.onclick = () => openUrl(b.dataset.url));
+/* ================= accounts + start ================= */
+function showLogin(on) {
+  $('login').classList.toggle('hide', !on);
+  $('lcancel').classList.toggle('hide', !S.accounts.length);
+  $('lintro').textContent = S.accounts.length ? 'Add another email account. Its inbox joins the others in All inboxes.' : 'All your email in one place: colour-coded, searchable in a blink, and checked before you hit send.';
+  $('lgo').textContent = 'Add account'; $('lerr').textContent = '';
+  if (on) { $('lemail').value = ''; $('lpass').value = ''; setProv('gmail'); }
+}
+$('lcancel').onclick = () => showLogin(false);
 $('lform').onsubmit = async e => {
-  e.preventDefault(); $('lerr').textContent = ''; $('lgo').disabled = true; $('lgo').textContent = 'Connecting to Gmail…';
-  try { const r = await call('login', {email: $('lemail').value, password: $('lpass').value}); $('lpass').value = ''; await start(r.email); }
-  catch (er) { $('lerr').textContent = er.message; }
-  $('lgo').disabled = false; $('lgo').textContent = 'Sign in';
+  e.preventDefault(); $('lerr').textContent = '';
+  const P = PROVIDERS[prov], email = $('lemail').value.trim();
+  const args = {email, password: $('lpass').value, provider: prov,
+    imapHost: prov === 'other' ? $('limap').value.trim() : P.imap[0], imapPort: prov === 'other' ? +$('limapport').value || 993 : P.imap[1],
+    smtpHost: prov === 'other' ? $('lsmtp').value.trim() : P.smtp[0], smtpPort: prov === 'other' ? +$('lsmtpport').value || 465 : P.smtp[1],
+    smtpSec: prov === 'other' ? (+$('lsmtpport').value === 587 ? 'starttls' : 'ssl') : P.smtp[2], user: prov === 'other' ? $('luser').value.trim() : ''};
+  if (!args.imapHost || !args.smtpHost) { $('lerr').textContent = 'Enter both server names.'; return; }
+  $('lgo').disabled = true; $('lgo').textContent = 'Connecting…';
+  try {
+    const a = await call('login', args); $('lpass').value = '';
+    S.accounts.push(a); showLogin(false);
+    await loadFolders(a.id);
+    setView(multi() ? 'all' : a.id, 'inbox', 'INBOX');
+    toast('Added ' + a.email);
+  } catch (er) { $('lerr').textContent = er.message; }
+  $('lgo').disabled = false; $('lgo').textContent = 'Add account';
 };
-async function start(email) {
-  S.acct = email; $('login').classList.add('hide');
-  $('avbtn').textContent = (settings.name || email)[0].toUpperCase();
-  const sp = ls.get('brisk-folders', null); if (sp) { S.sp = sp.special; S.labels = sp.labels; }
-  renderChips(); renderReader(); loadView(true);
-  try { const f = await call('folders'); S.sp = f.special; S.labels = f.labels; ls.set('brisk-folders', f); } catch (e) {}
+async function loadFolders(id) {
+  try { S.folders[id] = await call('folders', {acct: id}); ls.set('brisk-folders2', S.folders); } catch (e) {}
+}
+function updateAvatar() { $('avbtn').textContent = (settings.name || (S.accounts[0] || {}).email || 'B')[0].toUpperCase(); }
+async function start(accounts) {
+  S.accounts = accounts; updateAvatar();
+  const saved = ls.get('brisk-folders2', {});
+  for (const a of accounts) if (saved[a.id]) S.folders[a.id] = saved[a.id];
+  renderChips(); renderReader();
+  setView(multi() ? 'all' : accounts[0].id, 'inbox', 'INBOX');
+  accounts.forEach(a => loadFolders(a.id));
 }
 (async () => {
-  renderChips();
-  try { const s = await call('status'); if (s.email) return start(s.email); } catch (e) {}
-  $('login').classList.remove('hide');
+  renderChips(); setProv('gmail');
+  try { const s = await call('status'); if (s.accounts && s.accounts.length) return start(s.accounts); } catch (e) {}
+  showLogin(true);
 })();
 
 /* ================= preview mode (in a browser, no phone engine) ================= */
 function demo(m, a) {
   const T = (d, h, mi = 0) => new Date(2026, 10, d, h, mi).getTime();
   const M = [
-    [1,'Sarah Collins','sarah@brightlane.co.uk','Project review moved to Tuesday','Hi,\n\nQuick one, the project review with the client has moved to Tuesday 24 Nov at 2pm. Same Teams link as before.\n\nCan you bring the updated report?\n\nThanks,\nSarah',T(20,14,42),false,false,true],
-    [2,'British Gas','billing@britishgas.co.uk','Your energy bill is ready','Your latest statement is ready to view.\n\nAmount due: £84.20\nPayment date: 28 Nov 2026 by Direct Debit.',T(20,11,5),false,false,true],
-    [3,'Amazon','shipment@amazon.co.uk','Your parcel has been dispatched','Good news, your order 204-778 has been dispatched. Arriving Saturday 21 Nov with DPD, tracking number DP8841203.',T(20,8,30),true,false,false],
-    [4,'HMRC Refunds','refund@hmrc-claims.net','You are owed a tax refund of £412.50','We have calculated your annual tax refund. Click below to claim it within 24 hours.',T(20,7,12),false,false,false],
-    [5,'easyJet','noreply@easyjet.com','Booking confirmed: Gatwick to Malaga','Your flight booking is confirmed. EZY8071 departs Fri 11 Dec 2026, 06:40. Booking ref: K7TQ2M.',T(19,19,12),true,true,true],
-    [6,'Mum','mum@family.net','Sunday dinner?','Hello love,\n\nAre you coming for dinner on Sunday? Dad is doing a roast.\n\nLove Mum x',T(19,17,3),false,false,false],
-    [7,'Tom Price','tom@brightlane.co.uk','Weekly sync agenda','Agenda for Monday’s weekly sync at 10am: release status, support backlog and holiday cover.',T(19,9,15),true,false,false],
-    [8,'The Verge','newsletter@theverge.com','This week in tech: the newsletter edition','This week: new phones, a big AI release and the best streaming boxes of the year. Unsubscribe any time.',T(18,7,0),true,false,false],
-    [9,'Priya Shah','priya@northgate.com','Quick call about the invoice','Could we have a quick call about invoice INV-3381? Our finance team has the amount as £2,450 but the PO says £2,540.',T(17,16,45),true,false,false]
-  ].map(([uid, from, email, subj, body, t, seen, star, att]) => ({uid, folder:'INBOX', from, email, to:'me', subj, body, t, seen, star, att}));
+    ['g',1,'Sarah Collins','sarah@brightlane.co.uk','Project review moved to Tuesday','Hi,\n\nQuick one, the project review with the client has moved to Tuesday 24 Nov at 2pm. Same Teams link as before.\n\nCan you bring the updated report?\n\nThanks,\nSarah',T(20,14,42),false,false,true],
+    ['v',1,'Virgin Media','billing@virginmedia.co.uk','Your Virgin Media bill is ready','Your new bill is ready.\n\nAmount due: £62.00\nWe’ll collect it by Direct Debit on 1 Dec 2026.',T(20,12,10),false,false,false],
+    ['g',2,'British Gas','billing@britishgas.co.uk','Your energy bill is ready','Your latest statement is ready to view.\n\nAmount due: £84.20\nPayment date: 28 Nov 2026 by Direct Debit.',T(20,11,5),false,false,true],
+    ['g',3,'Amazon','shipment@amazon.co.uk','Your parcel has been dispatched','Good news, your order 204-778 has been dispatched. Arriving Saturday 21 Nov with DPD, tracking number DP8841203.',T(20,8,30),true,false,false],
+    ['v',2,'HMRC Refunds','refund@hmrc-claims.net','You are owed a tax refund of £412.50','We have calculated your annual tax refund. Click below to claim it within 24 hours.',T(20,7,12),false,false,false],
+    ['g',4,'easyJet','noreply@easyjet.com','Booking confirmed: Gatwick to Malaga','Your flight booking is confirmed. EZY8071 departs Fri 11 Dec 2026, 06:40. Booking ref: K7TQ2M.',T(19,19,12),true,true,true],
+    ['v',3,'Mum','mum@family.net','Sunday dinner?','Hello love,\n\nAre you coming for dinner on Sunday? Dad is doing a roast.\n\nLove Mum x',T(19,17,3),false,false,false],
+    ['g',5,'Tom Price','tom@brightlane.co.uk','Weekly sync agenda','Agenda for Monday’s weekly sync at 10am: release status, support backlog and holiday cover.',T(19,9,15),true,false,false],
+    ['v',4,'The Verge','newsletter@theverge.com','This week in tech: the newsletter edition','This week: new phones, a big AI release and the best streaming boxes of the year. Unsubscribe any time.',T(18,7,0),true,false,false],
+    ['g',6,'Priya Shah','priya@northgate.com','Quick call about the invoice','Could we have a quick call about invoice INV-3381? Our finance team has the amount as £2,450 but the PO says £2,540.',T(17,16,45),true,false,false]
+  ].map(([acct, uid, from, email, subj, body, t, seen, star, att]) => ({acct, uid, folder:'INBOX', from, email, to:'me', subj, body, t, seen, star, att}));
   const wait = v => new Promise(r => setTimeout(() => r(JSON.parse(JSON.stringify(v))), 120));
   const fail = msg => new Promise((_, r) => setTimeout(() => r(new Error(msg)), 300));
-  if (m === 'status') return wait({email: location.hash === '#demo' ? 'dave@gmail.com' : null});
-  if (m === 'login') return wait({email: a.email});
-  if (m === 'folders') return wait({special:{inbox:'INBOX', all:'[Gmail]/All Mail', sent:'[Gmail]/Sent Mail', trash:'[Gmail]/Bin', starred:'[Gmail]/Starred', spam:'[Gmail]/Spam', drafts:'[Gmail]/Drafts'}, labels:['Receipts']});
-  if (m === 'list') return wait(a.folder === 'INBOX' ? {total: M.length, items: M.map(({body, ...x}) => x)} : {total: 0, items: []});
-  if (m === 'snippets') return wait(Object.fromEntries(M.map(x => [x.uid, x.body.replace(/\s+/g, ' ')])));
-  if (m === 'body') { const x = M.find(y => y.uid === a.uid); return wait({...x, text: x.body, html: null, attachments: x.att ? [{idx:0, name:'Statement.pdf', size:88000}] : [], unsub: x.uid === 8 ? '<https://example.com/unsub>' : '', messageId:'<x@y>', references:'', cc:'', replyTo:''}); }
-  if (m === 'send') return wait({});
-  if (m === 'act' || m === 'logout') return wait({});
+  const ACCS = [{id:'g', email:'dave@gmail.com', provider:'gmail', gmail:true}, {id:'v', email:'dave@virginmedia.com', provider:'virgin', gmail:false}];
+  if (m === 'status') return wait({accounts: location.hash === '#demo' ? ACCS : []});
+  if (m === 'login') return wait({id: 'n' + Date.now(), email: a.email, provider: a.provider, gmail: a.provider === 'gmail'});
+  if (m === 'folders') return wait(a.acct === 'v' ? {special:{inbox:'INBOX', sent:'Sent', trash:'Trash', spam:'Spam', drafts:'Drafts', archive:'Archive'}, labels:[]} : {special:{inbox:'INBOX', all:'[Gmail]/All Mail', sent:'[Gmail]/Sent Mail', trash:'[Gmail]/Bin', starred:'[Gmail]/Starred', spam:'[Gmail]/Spam', drafts:'[Gmail]/Drafts'}, labels:['Receipts']});
+  if (m === 'list') { const it = a.folder === 'INBOX' ? M.filter(x => x.acct === a.acct) : []; return wait({total: it.length, items: it.map(({body, ...x}) => x)}); }
+  if (m === 'snippets') return wait(Object.fromEntries(M.filter(x => x.acct === a.acct).map(x => [x.uid, x.body.replace(/\s+/g, ' ')])));
+  if (m === 'body') { const x = M.find(y => y.uid === a.uid && y.acct === a.acct); return wait({...x, text: x.body, html: null, attachments: x.att ? [{idx:0, name:'Statement.pdf', size:88000}] : [], unsub: /newsletter/.test(x.email) ? '<https://example.com/unsub>' : '', messageId:'<x@y>', references:'', cc:'', replyTo:''}); }
+  if (m === 'send' || m === 'act' || m === 'logout') return wait({});
   return fail('Not available in preview');
 }
 }

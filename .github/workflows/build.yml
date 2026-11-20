@@ -248,9 +248,11 @@ jobs:
           import java.util.ArrayList;
           import java.util.Arrays;
           import java.util.HashMap;
+          import java.util.LinkedHashMap;
           import java.util.List;
           import java.util.Map;
           import java.util.Properties;
+          import java.util.UUID;
           import java.util.concurrent.ExecutorService;
           import java.util.concurrent.Executors;
 
@@ -272,6 +274,12 @@ jobs:
           import javax.mail.internet.MimeBodyPart;
           import javax.mail.internet.MimeMessage;
           import javax.mail.internet.MimeMultipart;
+          import javax.mail.search.AndTerm;
+          import javax.mail.search.BodyTerm;
+          import javax.mail.search.FromStringTerm;
+          import javax.mail.search.OrTerm;
+          import javax.mail.search.SearchTerm;
+          import javax.mail.search.SubjectTerm;
           import javax.mail.util.ByteArrayDataSource;
 
           import com.sun.mail.iap.Argument;
@@ -285,23 +293,35 @@ jobs:
            * Brisk Mail: the UI (assets/index.html) runs in a WebView; this class is the
            * native mail engine. JS calls BriskNative.call(id, method, jsonArgs) and gets
            * the answer back through window.__brisk(id, ok, data).
-           * Gmail is reached over IMAP (imap.gmail.com) and SMTP (smtp.gmail.com) with an
-           * app password, stored encrypted with a key held in the Android Keystore.
+           * Any number of IMAP/SMTP accounts (Gmail, Virgin Media, Yahoo, iCloud, others),
+           * each with an app password stored encrypted with a key in the Android Keystore.
            */
           public class MainActivity extends Activity {
 
               private static final int REQ_FILE = 51;
-              private static final String IMAP_HOST = "imap.gmail.com";
-              private static final String SMTP_HOST = "smtp.gmail.com";
 
               private WebView web;
-              private final ExecutorService imapPool = Executors.newSingleThreadExecutor();
+              private final ExecutorService imapPool = Executors.newFixedThreadPool(4);
               private final ExecutorService smtpPool = Executors.newSingleThreadExecutor();
               private ValueCallback<Uri[]> fileCallback;
 
-              private String email, password;
-              private IMAPStore store;
-              private final Map<String, IMAPFolder> open = new HashMap<>();
+              /** One mail account and its live IMAP connection. All IMAP work on it is done while holding its lock. */
+              private static class Acct {
+                  String id, email, user, provider, imapHost, smtpHost, smtpSec, pw;
+                  int imapPort, smtpPort;
+                  IMAPStore store;
+                  final Map<String, IMAPFolder> open = new HashMap<>();
+
+                  boolean gmail() { return "imap.gmail.com".equalsIgnoreCase(imapHost); }
+
+                  JSONObject pub() throws Exception {
+                      JSONObject o = new JSONObject();
+                      o.put("id", id); o.put("email", email); o.put("provider", provider); o.put("gmail", gmail());
+                      return o;
+                  }
+              }
+
+              private final Map<String, Acct> accounts = new LinkedHashMap<>();
 
               @SuppressLint({"SetJavaScriptEnabled", "AddJavascriptInterface"})
               @Override
@@ -366,7 +386,7 @@ jobs:
                       }
                   });
                   web.addJavascriptInterface(new Bridge(), "BriskNative");
-                  loadAccount();
+                  loadAccounts();
                   web.loadUrl("file:///android_asset/index.html");
               }
 
@@ -399,7 +419,11 @@ jobs:
 
               @Override
               protected void onDestroy() {
-                  imapPool.execute(this::closeAll);
+                  imapPool.execute(() -> {
+                      List<Acct> list;
+                      synchronized (accounts) { list = new ArrayList<>(accounts.values()); }
+                      for (Acct a : list) synchronized (a) { closeAll(a); }
+                  });
                   super.onDestroy();
               }
 
@@ -426,73 +450,124 @@ jobs:
                   return (SecretKey) ks.getKey("brisk", null);
               }
 
+              private String enc(String plain) throws Exception {
+                  Cipher c = Cipher.getInstance("AES/GCM/NoPadding");
+                  c.init(Cipher.ENCRYPT_MODE, key());
+                  byte[] ct = c.doFinal(plain.getBytes(StandardCharsets.UTF_8));
+                  return Base64.encodeToString(c.getIV(), Base64.NO_WRAP) + ":" + Base64.encodeToString(ct, Base64.NO_WRAP);
+              }
+
+              private String dec(String blob) throws Exception {
+                  String[] parts = blob.split(":");
+                  Cipher c = Cipher.getInstance("AES/GCM/NoPadding");
+                  c.init(Cipher.DECRYPT_MODE, key(), new GCMParameterSpec(128, Base64.decode(parts[0], Base64.NO_WRAP)));
+                  return new String(c.doFinal(Base64.decode(parts[1], Base64.NO_WRAP)), StandardCharsets.UTF_8);
+              }
+
               private SharedPreferences prefs() {
                   return getSharedPreferences("brisk", Context.MODE_PRIVATE);
               }
 
-              private void saveAccount(String e, String p) throws Exception {
-                  Cipher c = Cipher.getInstance("AES/GCM/NoPadding");
-                  c.init(Cipher.ENCRYPT_MODE, key());
-                  byte[] ct = c.doFinal(p.getBytes(StandardCharsets.UTF_8));
-                  String blob = Base64.encodeToString(c.getIV(), Base64.NO_WRAP) + ":" + Base64.encodeToString(ct, Base64.NO_WRAP);
-                  prefs().edit().putString("email", e).putString("pw", blob).apply();
+              private void saveAccounts() throws Exception {
+                  JSONArray arr = new JSONArray();
+                  SharedPreferences.Editor ed = prefs().edit();
+                  List<Acct> list;
+                  synchronized (accounts) { list = new ArrayList<>(accounts.values()); }
+                  for (Acct a : list) {
+                      JSONObject o = new JSONObject();
+                      o.put("id", a.id); o.put("email", a.email); o.put("user", a.user); o.put("provider", a.provider);
+                      o.put("imapHost", a.imapHost); o.put("imapPort", a.imapPort);
+                      o.put("smtpHost", a.smtpHost); o.put("smtpPort", a.smtpPort); o.put("smtpSec", a.smtpSec);
+                      arr.put(o);
+                      ed.putString("pw_" + a.id, enc(a.pw));
+                  }
+                  ed.putString("accounts", arr.toString()).apply();
               }
 
-              private void loadAccount() {
+              private void loadAccounts() {
+                  SharedPreferences p = prefs();
                   try {
-                      String e = prefs().getString("email", null), blob = prefs().getString("pw", null);
-                      if (e == null || blob == null) return;
-                      String[] parts = blob.split(":");
-                      Cipher c = Cipher.getInstance("AES/GCM/NoPadding");
-                      c.init(Cipher.DECRYPT_MODE, key(), new GCMParameterSpec(128, Base64.decode(parts[0], Base64.NO_WRAP)));
-                      password = new String(c.doFinal(Base64.decode(parts[1], Base64.NO_WRAP)), StandardCharsets.UTF_8);
-                      email = e;
-                  } catch (Exception ex) {
-                      email = null;
-                      password = null;
-                  }
+                      String old = p.getString("email", null), oldPw = p.getString("pw", null);
+                      if (old != null && oldPw != null && p.getString("accounts", null) == null) {
+                          // Version 1 stored a single Gmail account: move it into the account list.
+                          Acct a = gmailAcct(old, dec(oldPw));
+                          accounts.put(a.id, a);
+                          saveAccounts();
+                          p.edit().remove("email").remove("pw").apply();
+                          return;
+                      }
+                      JSONArray arr = new JSONArray(p.getString("accounts", "[]"));
+                      for (int i = 0; i < arr.length(); i++) {
+                          JSONObject o = arr.getJSONObject(i);
+                          Acct a = new Acct();
+                          a.id = o.getString("id"); a.email = o.getString("email"); a.user = o.optString("user", a.email);
+                          a.provider = o.optString("provider", "other");
+                          a.imapHost = o.getString("imapHost"); a.imapPort = o.optInt("imapPort", 993);
+                          a.smtpHost = o.getString("smtpHost"); a.smtpPort = o.optInt("smtpPort", 465);
+                          a.smtpSec = o.optString("smtpSec", "ssl");
+                          String blob = p.getString("pw_" + a.id, null);
+                          if (blob == null) continue;
+                          try { a.pw = dec(blob); } catch (Exception e) { continue; }
+                          accounts.put(a.id, a);
+                      }
+                  } catch (Exception ignored) { }
+              }
+
+              private static Acct gmailAcct(String email, String pw) {
+                  Acct a = new Acct();
+                  a.id = UUID.randomUUID().toString().substring(0, 8);
+                  a.email = email; a.user = email; a.pw = pw; a.provider = "gmail";
+                  a.imapHost = "imap.gmail.com"; a.imapPort = 993;
+                  a.smtpHost = "smtp.gmail.com"; a.smtpPort = 465; a.smtpSec = "ssl";
+                  return a;
               }
 
               /* ---------------- IMAP plumbing ---------------- */
 
-              private IMAPStore connect(String e, String p) throws Exception {
+              private static IMAPStore connect(Acct a) throws Exception {
                   Properties pr = new Properties();
                   pr.put("mail.store.protocol", "imaps");
-                  pr.put("mail.imaps.host", IMAP_HOST);
-                  pr.put("mail.imaps.port", "993");
+                  pr.put("mail.imaps.host", a.imapHost);
+                  pr.put("mail.imaps.port", String.valueOf(a.imapPort));
                   pr.put("mail.imaps.connectiontimeout", "15000");
                   pr.put("mail.imaps.timeout", "30000");
                   pr.put("mail.imaps.partialfetch", "false");
                   Session s = Session.getInstance(pr);
                   IMAPStore st = (IMAPStore) s.getStore("imaps");
-                  st.connect(IMAP_HOST, e, p);
+                  st.connect(a.imapHost, a.imapPort, a.user, a.pw);
                   return st;
               }
 
-              private IMAPStore store() throws Exception {
-                  if (email == null) throw new Exception("Not signed in");
-                  if (store != null && store.isConnected()) return store;
-                  closeAll();
-                  store = connect(email, password);
-                  return store;
+              private static IMAPStore store(Acct a) throws Exception {
+                  if (a.store != null && a.store.isConnected()) return a.store;
+                  closeAll(a);
+                  a.store = connect(a);
+                  return a.store;
               }
 
-              private IMAPFolder folder(String path) throws Exception {
-                  IMAPFolder f = open.get(path);
+              private static IMAPFolder folder(Acct a, String path) throws Exception {
+                  IMAPFolder f = a.open.get(path);
                   if (f != null && f.isOpen()) return f;
-                  f = (IMAPFolder) store().getFolder(path);
+                  f = (IMAPFolder) store(a).getFolder(path);
                   f.open(Folder.READ_WRITE);
-                  open.put(path, f);
+                  a.open.put(path, f);
                   return f;
               }
 
-              private void closeAll() {
-                  for (IMAPFolder f : open.values()) {
+              private static void closeAll(Acct a) {
+                  for (IMAPFolder f : a.open.values()) {
                       try { if (f.isOpen()) f.close(false); } catch (Exception ignored) { }
                   }
-                  open.clear();
-                  try { if (store != null) store.close(); } catch (Exception ignored) { }
-                  store = null;
+                  a.open.clear();
+                  try { if (a.store != null) a.store.close(); } catch (Exception ignored) { }
+                  a.store = null;
+              }
+
+              private Acct acct(JSONObject args) throws Exception {
+                  Acct a;
+                  synchronized (accounts) { a = accounts.get(args.optString("acct", "")); }
+                  if (a == null) throw new Exception("That account isn't signed in any more");
+                  return a;
               }
 
               private static String addrs(Address[] a) {
@@ -505,15 +580,16 @@ jobs:
                   return sb.toString();
               }
 
-              private static JSONObject summary(IMAPFolder f, javax.mail.Message m) throws Exception {
+              private static JSONObject summary(Acct acct, IMAPFolder f, javax.mail.Message m) throws Exception {
                   JSONObject o = new JSONObject();
+                  o.put("acct", acct.id);
                   o.put("uid", f.getUID(m));
                   o.put("folder", f.getFullName());
                   Address[] fr = m.getFrom();
                   InternetAddress a = fr != null && fr.length > 0 && fr[0] instanceof InternetAddress ? (InternetAddress) fr[0] : null;
                   String name = a == null ? "(unknown)" : (a.getPersonal() != null && !a.getPersonal().trim().isEmpty() ? a.getPersonal() : a.getAddress());
                   o.put("from", name);
-                  o.put("email", a == null ? "" : a.getAddress());
+                  o.put("email", a == null || a.getAddress() == null ? "" : a.getAddress());
                   o.put("to", addrs(m.getRecipients(javax.mail.Message.RecipientType.TO)));
                   String subj = m.getSubject();
                   o.put("subj", subj == null || subj.trim().isEmpty() ? "(no subject)" : subj);
@@ -534,6 +610,18 @@ jobs:
                   fp.add(FetchProfile.Item.CONTENT_INFO);
                   fp.add(UIDFolder.FetchProfileItem.UID);
                   return fp;
+              }
+
+              private static JSONArray summaries(Acct a, IMAPFolder f, javax.mail.Message[] ms) throws Exception {
+                  List<javax.mail.Message> ok = new ArrayList<>();
+                  for (javax.mail.Message m : ms) if (m != null) ok.add(m);
+                  javax.mail.Message[] arr = ok.toArray(new javax.mail.Message[0]);
+                  f.fetch(arr, listProfile());
+                  JSONArray items = new JSONArray();
+                  for (int i = arr.length - 1; i >= 0; i--) {
+                      try { items.put(summary(a, f, arr[i])); } catch (Exception ignored) { }
+                  }
+                  return items;
               }
 
               /* ---- body walking ---- */
@@ -593,10 +681,29 @@ jobs:
                   return h == null || h.length == 0 ? "" : h[0];
               }
 
-              private javax.mail.Message byUid(IMAPFolder f, long uid) throws Exception {
+              private static javax.mail.Message byUid(IMAPFolder f, long uid) throws Exception {
                   javax.mail.Message m = f.getMessageByUID(uid);
                   if (m == null) throw new Exception("That email no longer exists");
                   return m;
+              }
+
+              private static long[] longs(JSONArray a) throws Exception {
+                  long[] u = new long[a.length()];
+                  for (int i = 0; i < u.length; i++) u[i] = a.getLong(i);
+                  return u;
+              }
+
+              /** Folder role from its name, for servers that don't mark special folders (Virgin Media and others). */
+              private static String roleByName(String name) {
+                  String n = name.toLowerCase().trim();
+                  switch (n) {
+                      case "archive": case "archives": return "archive";
+                      case "sent": case "sent items": case "sent messages": case "sent mail": return "sent";
+                      case "trash": case "deleted": case "deleted items": case "deleted messages": case "bin": return "trash";
+                      case "spam": case "junk": case "junk e-mail": case "junk email": case "bulk mail": case "bulk": return "spam";
+                      case "drafts": case "draft": return "drafts";
+                      default: return null;
+                  }
               }
 
               /* ---------------- methods callable from the UI ---------------- */
@@ -604,57 +711,100 @@ jobs:
               private Object run(String method, JSONObject a) throws Exception {
                   switch (method) {
                       case "status": {
+                          JSONArray arr = new JSONArray();
+                          synchronized (accounts) { for (Acct x : accounts.values()) arr.put(x.pub()); }
                           JSONObject o = new JSONObject();
-                          o.put("email", email == null ? JSONObject.NULL : email);
+                          o.put("accounts", arr);
                           return o;
                       }
                       case "login": {
-                          String e = a.getString("email").trim(), p = a.getString("password").replace(" ", "");
-                          IMAPStore st;
-                          try {
-                              st = connect(e, p);
-                          } catch (javax.mail.AuthenticationFailedException ex) {
-                              throw new Exception("Gmail rejected that email or app password. Check both and try again.");
+                          Acct n = new Acct();
+                          n.id = UUID.randomUUID().toString().substring(0, 8);
+                          n.email = a.getString("email").trim();
+                          n.user = a.optString("user", "").trim();
+                          if (n.user.isEmpty()) n.user = n.email;
+                          n.pw = a.getString("password");
+                          n.provider = a.optString("provider", "other");
+                          if ("gmail".equals(n.provider)) n.pw = n.pw.replace(" ", "");
+                          n.imapHost = a.getString("imapHost").trim();
+                          n.imapPort = a.optInt("imapPort", 993);
+                          n.smtpHost = a.getString("smtpHost").trim();
+                          n.smtpPort = a.optInt("smtpPort", 465);
+                          n.smtpSec = a.optString("smtpSec", "ssl");
+                          synchronized (accounts) {
+                              for (Acct x : accounts.values())
+                                  if (x.email.equalsIgnoreCase(n.email)) throw new Exception(n.email + " is already added");
                           }
-                          closeAll();
-                          store = st;
-                          email = e;
-                          password = p;
-                          saveAccount(e, p);
-                          JSONObject o = new JSONObject();
-                          o.put("email", e);
-                          return o;
+                          try {
+                              n.store = connect(n);
+                          } catch (javax.mail.AuthenticationFailedException ex) {
+                              throw new Exception("The server rejected that email or password. Check you used an app password, not your normal one.");
+                          }
+                          synchronized (accounts) { accounts.put(n.id, n); }
+                          saveAccounts();
+                          return n.pub();
                       }
                       case "logout": {
-                          closeAll();
-                          email = null;
-                          password = null;
-                          prefs().edit().clear().apply();
+                          Acct x;
+                          synchronized (accounts) { x = accounts.remove(a.optString("acct", "")); }
+                          if (x != null) {
+                              synchronized (x) { closeAll(x); }
+                              prefs().edit().remove("pw_" + x.id).apply();
+                              saveAccounts();
+                          }
                           return new JSONObject();
                       }
+                      default: {
+                          Acct x = acct(a);
+                          synchronized (x) {
+                              try {
+                                  return runFor(x, method, a);
+                              } catch (javax.mail.FolderClosedException | javax.mail.StoreClosedException ex) {
+                                  closeAll(x); // dropped connection: reconnect once and retry
+                                  return runFor(x, method, a);
+                              }
+                          }
+                      }
+                  }
+              }
+
+              private Object runFor(Acct acct, String method, JSONObject a) throws Exception {
+                  switch (method) {
                       case "folders": {
                           JSONObject sp = new JSONObject();
                           JSONArray labels = new JSONArray();
                           sp.put("inbox", "INBOX");
-                          for (Folder f : store().getDefaultFolder().list("*")) {
+                          Map<String, String> byName = new HashMap<>();
+                          for (Folder f : store(acct).getDefaultFolder().list("*")) {
                               String[] attrs = ((IMAPFolder) f).getAttributes();
                               String role = null;
                               boolean noSelect = false;
                               for (String at : attrs) {
                                   switch (at) {
                                       case "\\All": role = "all"; break;
+                                      case "\\Archive": role = "archive"; break;
                                       case "\\Sent": role = "sent"; break;
                                       case "\\Trash": role = "trash"; break;
                                       case "\\Drafts": role = "drafts"; break;
                                       case "\\Junk": role = "spam"; break;
                                       case "\\Flagged": role = "starred"; break;
                                       case "\\Important": role = "important"; break;
-                                      case "\\Noselect": noSelect = true; break;
+                                      case "\\Noselect": case "\\NonExistent": noSelect = true; break;
                                       default: break;
                                   }
                               }
-                              if (role != null) sp.put(role, f.getFullName());
-                              else if (!noSelect && !"INBOX".equalsIgnoreCase(f.getFullName())) labels.put(f.getFullName());
+                              if (noSelect) continue;
+                              String full = f.getFullName();
+                              if (role != null) sp.put(role, full);
+                              else if (!"INBOX".equalsIgnoreCase(full)) {
+                                  String r = roleByName(f.getName());
+                                  if (r != null && !byName.containsKey(r)) byName.put(r, full);
+                                  else labels.put(full);
+                              }
+                          }
+                          for (Map.Entry<String, String> e : byName.entrySet()) {
+                              if (!sp.has(e.getKey())) sp.put(e.getKey(), e.getValue());
+                              else labels.put(e.getValue());
                           }
                           JSONObject o = new JSONObject();
                           o.put("special", sp);
@@ -662,30 +812,19 @@ jobs:
                           return o;
                       }
                       case "list": {
-                          IMAPFolder f = folder(a.getString("folder"));
+                          IMAPFolder f = folder(acct, a.getString("folder"));
                           int offset = a.optInt("offset", 0), count = a.optInt("count", 40);
                           int total = f.getMessageCount();
                           int end = total - offset, start = Math.max(1, end - count + 1);
-                          JSONArray items = new JSONArray();
-                          if (end >= 1) {
-                              javax.mail.Message[] ms = f.getMessages(start, end);
-                              f.fetch(ms, listProfile());
-                              for (int i = ms.length - 1; i >= 0; i--) {
-                                  try { items.put(summary(f, ms[i])); } catch (Exception ignored) { }
-                              }
-                          }
                           JSONObject o = new JSONObject();
                           o.put("total", total);
-                          o.put("items", items);
+                          o.put("items", end >= 1 ? summaries(acct, f, f.getMessages(start, end)) : new JSONArray());
                           return o;
                       }
                       case "snippets": {
-                          IMAPFolder f = folder(a.getString("folder"));
-                          JSONArray uids = a.getJSONArray("uids");
-                          long[] u = new long[uids.length()];
-                          for (int i = 0; i < u.length; i++) u[i] = uids.getLong(i);
+                          IMAPFolder f = folder(acct, a.getString("folder"));
                           JSONObject out = new JSONObject();
-                          for (javax.mail.Message m : f.getMessagesByUID(u)) {
+                          for (javax.mail.Message m : f.getMessagesByUID(longs(a.getJSONArray("uids")))) {
                               if (m == null) continue;
                               try {
                                   ((IMAPMessage) m).setPeek(true);
@@ -698,13 +837,13 @@ jobs:
                           return out;
                       }
                       case "body": {
-                          IMAPFolder f = folder(a.getString("folder"));
+                          IMAPFolder f = folder(acct, a.getString("folder"));
                           javax.mail.Message m = byUid(f, a.getLong("uid"));
                           ((IMAPMessage) m).setPeek(true);
                           Body b = new Body();
                           walk(m, b);
                           if (!m.isSet(Flags.Flag.SEEN)) m.setFlag(Flags.Flag.SEEN, true);
-                          JSONObject o = summary(f, m);
+                          JSONObject o = summary(acct, f, m);
                           o.put("text", plain(b));
                           o.put("html", b.html == null ? JSONObject.NULL : b.html);
                           o.put("cc", addrs(m.getRecipients(javax.mail.Message.RecipientType.CC)));
@@ -728,7 +867,7 @@ jobs:
                       }
                       case "attachment": {
                           if (Build.VERSION.SDK_INT < 29) throw new Exception("Saving attachments needs Android 10 or newer");
-                          IMAPFolder f = folder(a.getString("folder"));
+                          IMAPFolder f = folder(acct, a.getString("folder"));
                           javax.mail.Message m = byUid(f, a.getLong("uid"));
                           ((IMAPMessage) m).setPeek(true);
                           Body b = new Body();
@@ -760,51 +899,56 @@ jobs:
                           return o;
                       }
                       case "search": {
-                          IMAPFolder f = folder(a.getString("folder"));
-                          final String q = a.getString("query");
-                          @SuppressWarnings("unchecked")
-                          List<Long> uids = (List<Long>) f.doCommand(pr -> {
-                              Argument args = new Argument();
-                              args.writeAtom("X-GM-RAW");
-                              args.writeString(q);
-                              Response[] rs = pr.command("UID SEARCH", args);
-                              List<Long> found = new ArrayList<>();
-                              for (Response r : rs) {
-                                  if (r instanceof IMAPResponse && ((IMAPResponse) r).keyEquals("SEARCH")) {
-                                      long n;
-                                      while ((n = r.readNumber()) != -1) found.add(n);
+                          IMAPFolder f = folder(acct, a.getString("folder"));
+                          int max = a.optInt("count", 60);
+                          javax.mail.Message[] found;
+                          int total;
+                          if (acct.gmail()) {
+                              final String q = a.getString("query");
+                              @SuppressWarnings("unchecked")
+                              List<Long> uids = (List<Long>) f.doCommand(pr -> {
+                                  Argument args = new Argument();
+                                  args.writeAtom("X-GM-RAW");
+                                  args.writeString(q);
+                                  Response[] rs = pr.command("UID SEARCH", args);
+                                  List<Long> list = new ArrayList<>();
+                                  for (Response r : rs) {
+                                      if (r instanceof IMAPResponse && ((IMAPResponse) r).keyEquals("SEARCH")) {
+                                          long n;
+                                          while ((n = r.readNumber()) != -1) list.add(n);
+                                      }
+                                  }
+                                  pr.notifyResponseHandlers(rs);
+                                  pr.handleResult(rs[rs.length - 1]);
+                                  return list;
+                              });
+                              total = uids.size();
+                              int from = Math.max(0, uids.size() - max);
+                              long[] u = new long[uids.size() - from];
+                              for (int i = 0; i < u.length; i++) u[i] = uids.get(from + i);
+                              found = u.length > 0 ? f.getMessagesByUID(u) : new javax.mail.Message[0];
+                          } else {
+                              JSONArray terms = a.optJSONArray("terms");
+                              SearchTerm st = null;
+                              if (terms != null) {
+                                  for (int i = 0; i < terms.length(); i++) {
+                                      String t = terms.getString(i);
+                                      SearchTerm one = new OrTerm(new SearchTerm[]{new SubjectTerm(t), new FromStringTerm(t), new BodyTerm(t)});
+                                      st = st == null ? one : new AndTerm(st, one);
                                   }
                               }
-                              pr.notifyResponseHandlers(rs);
-                              pr.handleResult(rs[rs.length - 1]);
-                              return found;
-                          });
-                          int max = a.optInt("count", 60);
-                          int from = Math.max(0, uids.size() - max);
-                          long[] u = new long[uids.size() - from];
-                          for (int i = 0; i < u.length; i++) u[i] = uids.get(from + i);
-                          JSONArray items = new JSONArray();
-                          if (u.length > 0) {
-                              javax.mail.Message[] ms = f.getMessagesByUID(u);
-                              List<javax.mail.Message> ok = new ArrayList<>();
-                              for (javax.mail.Message m : ms) if (m != null) ok.add(m);
-                              javax.mail.Message[] arr = ok.toArray(new javax.mail.Message[0]);
-                              f.fetch(arr, listProfile());
-                              for (int i = arr.length - 1; i >= 0; i--) {
-                                  try { items.put(summary(f, arr[i])); } catch (Exception ignored) { }
-                              }
+                              javax.mail.Message[] all = st == null ? new javax.mail.Message[0] : f.search(st);
+                              total = all.length;
+                              found = Arrays.copyOfRange(all, Math.max(0, all.length - max), all.length);
                           }
                           JSONObject o = new JSONObject();
-                          o.put("total", uids.size());
-                          o.put("items", items);
+                          o.put("total", total);
+                          o.put("items", found.length > 0 ? summaries(acct, f, found) : new JSONArray());
                           return o;
                       }
                       case "act": {
-                          IMAPFolder f = folder(a.getString("folder"));
-                          JSONArray ua = a.getJSONArray("uids");
-                          long[] u = new long[ua.length()];
-                          for (int i = 0; i < u.length; i++) u[i] = ua.getLong(i);
-                          javax.mail.Message[] ms = f.getMessagesByUID(u);
+                          IMAPFolder f = folder(acct, a.getString("folder"));
+                          javax.mail.Message[] ms = f.getMessagesByUID(longs(a.getJSONArray("uids")));
                           List<javax.mail.Message> ok = new ArrayList<>(Arrays.asList(ms));
                           ok.removeIf(x -> x == null);
                           javax.mail.Message[] arr = ok.toArray(new javax.mail.Message[0]);
@@ -816,8 +960,15 @@ jobs:
                               case "star": f.setFlags(arr, new Flags(Flags.Flag.FLAGGED), true); break;
                               case "unstar": f.setFlags(arr, new Flags(Flags.Flag.FLAGGED), false); break;
                               case "move": {
-                                  IMAPFolder to = (IMAPFolder) store().getFolder(a.getString("to"));
-                                  f.moveMessages(arr, to);
+                                  IMAPFolder to = (IMAPFolder) store(acct).getFolder(a.getString("to"));
+                                  if (!to.exists()) to.create(Folder.HOLDS_MESSAGES);
+                                  if (store(acct).hasCapability("MOVE")) {
+                                      f.moveMessages(arr, to);
+                                  } else {
+                                      f.copyMessages(arr, to);
+                                      f.setFlags(arr, new Flags(Flags.Flag.DELETED), true);
+                                      try { f.expunge(arr); } catch (Exception e) { f.expunge(); }
+                                  }
                                   break;
                               }
                               default: throw new Exception("Unknown action " + op);
@@ -830,18 +981,23 @@ jobs:
               }
 
               private Object send(JSONObject a) throws Exception {
-                  if (email == null) throw new Exception("Not signed in");
+                  Acct acct = acct(a);
                   Properties pr = new Properties();
-                  pr.put("mail.smtp.host", SMTP_HOST);
-                  pr.put("mail.smtp.port", "465");
-                  pr.put("mail.smtp.ssl.enable", "true");
+                  pr.put("mail.smtp.host", acct.smtpHost);
+                  pr.put("mail.smtp.port", String.valueOf(acct.smtpPort));
                   pr.put("mail.smtp.auth", "true");
+                  if ("starttls".equals(acct.smtpSec)) {
+                      pr.put("mail.smtp.starttls.enable", "true");
+                      pr.put("mail.smtp.starttls.required", "true");
+                  } else {
+                      pr.put("mail.smtp.ssl.enable", "true");
+                  }
                   pr.put("mail.smtp.connectiontimeout", "15000");
                   pr.put("mail.smtp.timeout", "60000");
                   Session s = Session.getInstance(pr);
                   MimeMessage mm = new MimeMessage(s);
                   String name = a.optString("name", "");
-                  mm.setFrom(name.isEmpty() ? new InternetAddress(email) : new InternetAddress(email, name, "UTF-8"));
+                  mm.setFrom(name.isEmpty() ? new InternetAddress(acct.email) : new InternetAddress(acct.email, name, "UTF-8"));
                   mm.setRecipients(javax.mail.Message.RecipientType.TO, InternetAddress.parse(a.getString("to")));
                   String cc = a.optString("cc", "").trim();
                   if (!cc.isEmpty()) mm.setRecipients(javax.mail.Message.RecipientType.CC, InternetAddress.parse(cc));
@@ -871,7 +1027,23 @@ jobs:
                       mm.setText(a.optString("body", ""), "UTF-8");
                   }
                   mm.setSentDate(new java.util.Date());
-                  Transport.send(mm, email, password);
+                  mm.saveChanges();
+                  Transport.send(mm, acct.user, acct.pw);
+
+                  // Gmail files sent mail itself; other providers need a copy put in their Sent folder.
+                  if (!acct.gmail()) {
+                      String sent = a.optString("sentFolder", "");
+                      if (!sent.isEmpty()) {
+                          try {
+                              synchronized (acct) {
+                                  IMAPFolder f = (IMAPFolder) store(acct).getFolder(sent);
+                                  if (!f.exists()) f.create(Folder.HOLDS_MESSAGES);
+                                  mm.setFlag(Flags.Flag.SEEN, true);
+                                  f.appendMessages(new javax.mail.Message[]{mm});
+                              }
+                          } catch (Exception ignored) { }
+                      }
+                  }
                   return new JSONObject();
               }
 
@@ -882,7 +1054,7 @@ jobs:
               private static String friendly(Exception e) {
                   String m = e.getMessage();
                   if (e instanceof java.net.UnknownHostException || (m != null && m.contains("Couldn't connect")))
-                      return "No connection to Gmail. Check your internet.";
+                      return "Couldn't reach the mail server. Check your internet and the server name.";
                   return m == null ? e.getClass().getSimpleName() : m;
               }
 
@@ -893,16 +1065,7 @@ jobs:
                       pool.execute(() -> {
                           try {
                               JSONObject args = json == null || json.isEmpty() ? new JSONObject() : new JSONObject(json);
-                              Object r;
-                              if ("send".equals(method)) r = send(args);
-                              else {
-                                  try {
-                                      r = run(method, args);
-                                  } catch (javax.mail.FolderClosedException | javax.mail.StoreClosedException ex) {
-                                      closeAll(); // dropped connection: reconnect once and retry
-                                      r = run(method, args);
-                                  }
-                              }
+                              Object r = "send".equals(method) ? send(args) : run(method, args);
                               reply(id, true, r.toString());
                           } catch (Exception e) {
                               reply(id, false, JSONObject.quote(friendly(e)));
