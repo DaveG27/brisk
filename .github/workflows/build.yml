@@ -1,0 +1,1001 @@
+name: Build Brisk APK
+
+# Self-contained: this one file generates the whole Android project,
+# so the repo only needs index.html plus this workflow.
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Generate Android project
+        run: |
+          set -e
+          rm -rf android
+          mkdir -p android
+          cat > android/settings.gradle <<'BRISK_EOF'
+          pluginManagement {
+              repositories { google(); mavenCentral(); gradlePluginPortal() }
+          }
+          dependencyResolutionManagement {
+              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+              repositories { google(); mavenCentral() }
+          }
+          rootProject.name = "Brisk"
+          include ':app'
+          BRISK_EOF
+          mkdir -p android
+          cat > android/build.gradle <<'BRISK_EOF'
+          plugins {
+              id 'com.android.application' version '8.5.2' apply false
+          }
+          BRISK_EOF
+          mkdir -p android
+          cat > android/gradle.properties <<'BRISK_EOF'
+          org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8
+          android.useAndroidX=true
+          android.nonTransitiveRClass=true
+          BRISK_EOF
+          mkdir -p android/app
+          cat > android/app/build.gradle <<'BRISK_EOF'
+          plugins {
+              id 'com.android.application'
+          }
+
+          def runNo = (System.getenv('GITHUB_RUN_NUMBER') ?: '1').toInteger()
+
+          android {
+              namespace 'com.daveg27.brisk'
+              compileSdk 34
+
+              defaultConfig {
+                  applicationId 'com.daveg27.brisk'
+                  minSdk 26
+                  targetSdk 34
+                  versionCode runNo
+                  versionName "1.0.${runNo}"
+              }
+
+              signingConfigs {
+                  // Fixed key so each new build installs over the previous one.
+                  brisk {
+                      storeFile file('brisk.keystore')
+                      storePassword 'brisk-mail-key'
+                      keyAlias 'brisk'
+                      keyPassword 'brisk-mail-key'
+                  }
+              }
+
+              buildTypes {
+                  release {
+                      minifyEnabled false
+                      signingConfig signingConfigs.brisk
+                  }
+                  debug {
+                      signingConfig signingConfigs.brisk
+                  }
+              }
+
+              compileOptions {
+                  sourceCompatibility JavaVersion.VERSION_17
+                  targetCompatibility JavaVersion.VERSION_17
+              }
+
+              packaging {
+                  resources {
+                      excludes += ['META-INF/LICENSE.md', 'META-INF/NOTICE.md', 'META-INF/LICENSE.txt', 'META-INF/NOTICE.txt', 'META-INF/DEPENDENCIES']
+                  }
+              }
+
+              lint {
+                  checkReleaseBuilds false
+                  abortOnError false
+              }
+          }
+
+          dependencies {
+              // JavaMail for Android: IMAP (reading/searching Gmail) and SMTP (sending)
+              implementation 'com.sun.mail:android-mail:1.6.7'
+              implementation 'com.sun.mail:android-activation:1.6.7'
+          }
+          BRISK_EOF
+          mkdir -p android/app/src/main
+          cat > android/app/src/main/AndroidManifest.xml <<'BRISK_EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+              <uses-permission android:name="android.permission.INTERNET" />
+              <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+              <application
+                  android:label="Brisk"
+                  android:icon="@mipmap/ic_launcher"
+                  android:roundIcon="@mipmap/ic_launcher_round"
+                  android:theme="@style/BriskTheme"
+                  android:hardwareAccelerated="true"
+                  android:allowBackup="false">
+                  <activity
+                      android:name=".MainActivity"
+                      android:exported="true"
+                      android:launchMode="singleTask"
+                      android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboard|keyboardHidden|uiMode|density"
+                      android:windowSoftInputMode="adjustResize">
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN" />
+                          <category android:name="android.intent.category.LAUNCHER" />
+                      </intent-filter>
+                  </activity>
+              </application>
+          </manifest>
+          BRISK_EOF
+          mkdir -p android/app/src/main/res/values
+          cat > android/app/src/main/res/values/styles.xml <<'BRISK_EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <resources>
+              <style name="BriskTheme" parent="@android:style/Theme.Material.Light.NoActionBar">
+                  <item name="android:windowBackground">@color/brisk_light</item>
+                  <item name="android:statusBarColor">@color/brisk_bg</item>
+                  <item name="android:navigationBarColor">@color/brisk_bg</item>
+                  <item name="android:windowLightStatusBar">false</item>
+              </style>
+          </resources>
+          BRISK_EOF
+          mkdir -p android/app/src/main/res/values-night
+          cat > android/app/src/main/res/values-night/styles.xml <<'BRISK_EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <resources>
+              <style name="BriskTheme" parent="@android:style/Theme.Material.NoActionBar">
+                  <item name="android:windowBackground">@color/brisk_dark</item>
+                  <item name="android:statusBarColor">@color/brisk_bg</item>
+                  <item name="android:navigationBarColor">@color/brisk_bg</item>
+              </style>
+          </resources>
+          BRISK_EOF
+          mkdir -p android/app/src/main/res/values
+          cat > android/app/src/main/res/values/colors.xml <<'BRISK_EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <resources>
+              <color name="brisk_bg">#0A2540</color>
+              <color name="brisk_light">#F4F7FB</color>
+              <color name="brisk_dark">#07182C</color>
+          </resources>
+          BRISK_EOF
+          mkdir -p android/app/src/main/res/drawable
+          cat > android/app/src/main/res/drawable/ic_launcher_fg.xml <<'BRISK_EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <vector xmlns:android="http://schemas.android.com/apk/res/android"
+              android:width="108dp" android:height="108dp"
+              android:viewportWidth="108" android:viewportHeight="108">
+              <path android:fillColor="#FFFFFF" android:pathData="M34,38h40a4,4 0 0,1 4,4v26a4,4 0 0,1 -4,4h-40a4,4 0 0,1 -4,-4v-26a4,4 0 0,1 4,-4z"/>
+              <path android:strokeColor="#0A2540" android:strokeWidth="3.2" android:strokeLineJoin="round" android:strokeLineCap="round"
+                  android:pathData="M32,41L54,57L76,41"/>
+              <path android:fillColor="#FF5C8A" android:pathData="M74,30a8,8 0 1,1 0,16a8,8 0 1,1 0,-16z"/>
+              <path android:fillColor="#8FD3FF" android:pathData="M30,76h22v4h-22z"/>
+              <path android:fillColor="#FF5C8A" android:pathData="M55,76h10v4h-10z"/>
+          </vector>
+          BRISK_EOF
+          mkdir -p android/app/src/main/res/mipmap-anydpi
+          cat > android/app/src/main/res/mipmap-anydpi/ic_launcher.xml <<'BRISK_EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+              <background android:drawable="@color/brisk_bg" />
+              <foreground android:drawable="@drawable/ic_launcher_fg" />
+          </adaptive-icon>
+          BRISK_EOF
+          mkdir -p android/app/src/main/res/mipmap-anydpi
+          cat > android/app/src/main/res/mipmap-anydpi/ic_launcher_round.xml <<'BRISK_EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+              <background android:drawable="@color/brisk_bg" />
+              <foreground android:drawable="@drawable/ic_launcher_fg" />
+          </adaptive-icon>
+          BRISK_EOF
+          mkdir -p android/app/src/main/java/com/daveg27/brisk
+          cat > android/app/src/main/java/com/daveg27/brisk/MainActivity.java <<'BRISK_EOF'
+          package com.daveg27.brisk;
+
+          import android.annotation.SuppressLint;
+          import android.app.Activity;
+          import android.content.ContentValues;
+          import android.content.Context;
+          import android.content.Intent;
+          import android.content.SharedPreferences;
+          import android.graphics.Color;
+          import android.net.Uri;
+          import android.os.Build;
+          import android.os.Bundle;
+          import android.os.Environment;
+          import android.os.Message;
+          import android.provider.MediaStore;
+          import android.security.keystore.KeyGenParameterSpec;
+          import android.security.keystore.KeyProperties;
+          import android.util.Base64;
+          import android.view.Window;
+          import android.webkit.JavascriptInterface;
+          import android.webkit.ValueCallback;
+          import android.webkit.WebChromeClient;
+          import android.webkit.WebResourceRequest;
+          import android.webkit.WebSettings;
+          import android.webkit.WebView;
+          import android.webkit.WebViewClient;
+
+          import org.json.JSONArray;
+          import org.json.JSONObject;
+
+          import java.io.ByteArrayOutputStream;
+          import java.io.InputStream;
+          import java.io.OutputStream;
+          import java.nio.charset.StandardCharsets;
+          import java.security.KeyStore;
+          import java.util.ArrayList;
+          import java.util.Arrays;
+          import java.util.HashMap;
+          import java.util.List;
+          import java.util.Map;
+          import java.util.Properties;
+          import java.util.concurrent.ExecutorService;
+          import java.util.concurrent.Executors;
+
+          import javax.activation.DataHandler;
+          import javax.crypto.Cipher;
+          import javax.crypto.KeyGenerator;
+          import javax.crypto.SecretKey;
+          import javax.crypto.spec.GCMParameterSpec;
+          import javax.mail.Address;
+          import javax.mail.FetchProfile;
+          import javax.mail.Flags;
+          import javax.mail.Folder;
+          import javax.mail.Multipart;
+          import javax.mail.Part;
+          import javax.mail.Session;
+          import javax.mail.Transport;
+          import javax.mail.UIDFolder;
+          import javax.mail.internet.InternetAddress;
+          import javax.mail.internet.MimeBodyPart;
+          import javax.mail.internet.MimeMessage;
+          import javax.mail.internet.MimeMultipart;
+          import javax.mail.util.ByteArrayDataSource;
+
+          import com.sun.mail.iap.Argument;
+          import com.sun.mail.iap.Response;
+          import com.sun.mail.imap.IMAPFolder;
+          import com.sun.mail.imap.IMAPMessage;
+          import com.sun.mail.imap.IMAPStore;
+          import com.sun.mail.imap.protocol.IMAPResponse;
+
+          /**
+           * Brisk Mail: the UI (assets/index.html) runs in a WebView; this class is the
+           * native mail engine. JS calls BriskNative.call(id, method, jsonArgs) and gets
+           * the answer back through window.__brisk(id, ok, data).
+           * Gmail is reached over IMAP (imap.gmail.com) and SMTP (smtp.gmail.com) with an
+           * app password, stored encrypted with a key held in the Android Keystore.
+           */
+          public class MainActivity extends Activity {
+
+              private static final int REQ_FILE = 51;
+              private static final String IMAP_HOST = "imap.gmail.com";
+              private static final String SMTP_HOST = "smtp.gmail.com";
+
+              private WebView web;
+              private final ExecutorService imapPool = Executors.newSingleThreadExecutor();
+              private final ExecutorService smtpPool = Executors.newSingleThreadExecutor();
+              private ValueCallback<Uri[]> fileCallback;
+
+              private String email, password;
+              private IMAPStore store;
+              private final Map<String, IMAPFolder> open = new HashMap<>();
+
+              @SuppressLint({"SetJavaScriptEnabled", "AddJavascriptInterface"})
+              @Override
+              protected void onCreate(Bundle b) {
+                  super.onCreate(b);
+                  Window w = getWindow();
+                  w.setStatusBarColor(Color.parseColor("#0A2540"));
+                  w.setNavigationBarColor(Color.parseColor("#0A2540"));
+
+                  web = new WebView(this);
+                  boolean night = (getResources().getConfiguration().uiMode
+                          & android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES;
+                  web.setBackgroundColor(Color.parseColor(night ? "#07182C" : "#F4F7FB"));
+                  setContentView(web);
+                  WebSettings s = web.getSettings();
+                  s.setJavaScriptEnabled(true);
+                  s.setDomStorageEnabled(true);
+                  s.setAllowFileAccess(true);
+                  s.setSupportMultipleWindows(true);
+                  s.setTextZoom(100);
+
+                  web.setWebViewClient(new WebViewClient() {
+                      @Override
+                      public boolean shouldOverrideUrlLoading(WebView v, WebResourceRequest r) {
+                          String u = r.getUrl().toString();
+                          if (u.startsWith("file:") || u.startsWith("about:") || u.startsWith("data:")) return false;
+                          openExternal(u);
+                          return true;
+                      }
+                  });
+                  web.setWebChromeClient(new WebChromeClient() {
+                      @Override
+                      public boolean onShowFileChooser(WebView v, ValueCallback<Uri[]> cb, FileChooserParams p) {
+                          if (fileCallback != null) fileCallback.onReceiveValue(null);
+                          fileCallback = cb;
+                          try {
+                              Intent i = p.createIntent();
+                              i.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+                              startActivityForResult(i, REQ_FILE);
+                          } catch (Exception e) {
+                              fileCallback = null;
+                              return false;
+                          }
+                          return true;
+                      }
+
+                      /* Links in email (target=_blank) open in the phone's browser. */
+                      @Override
+                      public boolean onCreateWindow(WebView v, boolean dialog, boolean user, Message msg) {
+                          WebView tmp = new WebView(MainActivity.this);
+                          tmp.setWebViewClient(new WebViewClient() {
+                              @Override
+                              public boolean shouldOverrideUrlLoading(WebView t, WebResourceRequest r) {
+                                  openExternal(r.getUrl().toString());
+                                  t.destroy();
+                                  return true;
+                              }
+                          });
+                          ((WebView.WebViewTransport) msg.obj).setWebView(tmp);
+                          msg.sendToTarget();
+                          return true;
+                      }
+                  });
+                  web.addJavascriptInterface(new Bridge(), "BriskNative");
+                  loadAccount();
+                  web.loadUrl("file:///android_asset/index.html");
+              }
+
+              @Override
+              protected void onActivityResult(int req, int res, Intent data) {
+                  if (req == REQ_FILE && fileCallback != null) {
+                      Uri[] out = null;
+                      if (res == RESULT_OK && data != null) {
+                          if (data.getClipData() != null) {
+                              int n = data.getClipData().getItemCount();
+                              out = new Uri[n];
+                              for (int i = 0; i < n; i++) out[i] = data.getClipData().getItemAt(i).getUri();
+                          } else if (data.getData() != null) {
+                              out = new Uri[]{data.getData()};
+                          }
+                      }
+                      fileCallback.onReceiveValue(out);
+                      fileCallback = null;
+                      return;
+                  }
+                  super.onActivityResult(req, res, data);
+              }
+
+              @Override
+              public void onBackPressed() {
+                  web.evaluateJavascript("window.briskBack ? String(window.briskBack()) : 'false'", v -> {
+                      if (v == null || !v.contains("true")) finish();
+                  });
+              }
+
+              @Override
+              protected void onDestroy() {
+                  imapPool.execute(this::closeAll);
+                  super.onDestroy();
+              }
+
+              private void openExternal(String url) {
+                  try {
+                      startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+                  } catch (Exception ignored) { }
+              }
+
+              /* ---------------- credentials (AES-GCM, key in Android Keystore) ---------------- */
+
+              private SecretKey key() throws Exception {
+                  KeyStore ks = KeyStore.getInstance("AndroidKeyStore");
+                  ks.load(null);
+                  if (!ks.containsAlias("brisk")) {
+                      KeyGenerator kg = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore");
+                      kg.init(new KeyGenParameterSpec.Builder("brisk",
+                              KeyProperties.PURPOSE_ENCRYPT | KeyProperties.PURPOSE_DECRYPT)
+                              .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
+                              .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
+                              .build());
+                      kg.generateKey();
+                  }
+                  return (SecretKey) ks.getKey("brisk", null);
+              }
+
+              private SharedPreferences prefs() {
+                  return getSharedPreferences("brisk", Context.MODE_PRIVATE);
+              }
+
+              private void saveAccount(String e, String p) throws Exception {
+                  Cipher c = Cipher.getInstance("AES/GCM/NoPadding");
+                  c.init(Cipher.ENCRYPT_MODE, key());
+                  byte[] ct = c.doFinal(p.getBytes(StandardCharsets.UTF_8));
+                  String blob = Base64.encodeToString(c.getIV(), Base64.NO_WRAP) + ":" + Base64.encodeToString(ct, Base64.NO_WRAP);
+                  prefs().edit().putString("email", e).putString("pw", blob).apply();
+              }
+
+              private void loadAccount() {
+                  try {
+                      String e = prefs().getString("email", null), blob = prefs().getString("pw", null);
+                      if (e == null || blob == null) return;
+                      String[] parts = blob.split(":");
+                      Cipher c = Cipher.getInstance("AES/GCM/NoPadding");
+                      c.init(Cipher.DECRYPT_MODE, key(), new GCMParameterSpec(128, Base64.decode(parts[0], Base64.NO_WRAP)));
+                      password = new String(c.doFinal(Base64.decode(parts[1], Base64.NO_WRAP)), StandardCharsets.UTF_8);
+                      email = e;
+                  } catch (Exception ex) {
+                      email = null;
+                      password = null;
+                  }
+              }
+
+              /* ---------------- IMAP plumbing ---------------- */
+
+              private IMAPStore connect(String e, String p) throws Exception {
+                  Properties pr = new Properties();
+                  pr.put("mail.store.protocol", "imaps");
+                  pr.put("mail.imaps.host", IMAP_HOST);
+                  pr.put("mail.imaps.port", "993");
+                  pr.put("mail.imaps.connectiontimeout", "15000");
+                  pr.put("mail.imaps.timeout", "30000");
+                  pr.put("mail.imaps.partialfetch", "false");
+                  Session s = Session.getInstance(pr);
+                  IMAPStore st = (IMAPStore) s.getStore("imaps");
+                  st.connect(IMAP_HOST, e, p);
+                  return st;
+              }
+
+              private IMAPStore store() throws Exception {
+                  if (email == null) throw new Exception("Not signed in");
+                  if (store != null && store.isConnected()) return store;
+                  closeAll();
+                  store = connect(email, password);
+                  return store;
+              }
+
+              private IMAPFolder folder(String path) throws Exception {
+                  IMAPFolder f = open.get(path);
+                  if (f != null && f.isOpen()) return f;
+                  f = (IMAPFolder) store().getFolder(path);
+                  f.open(Folder.READ_WRITE);
+                  open.put(path, f);
+                  return f;
+              }
+
+              private void closeAll() {
+                  for (IMAPFolder f : open.values()) {
+                      try { if (f.isOpen()) f.close(false); } catch (Exception ignored) { }
+                  }
+                  open.clear();
+                  try { if (store != null) store.close(); } catch (Exception ignored) { }
+                  store = null;
+              }
+
+              private static String addrs(Address[] a) {
+                  if (a == null) return "";
+                  StringBuilder sb = new StringBuilder();
+                  for (Address x : a) {
+                      if (sb.length() > 0) sb.append(", ");
+                      sb.append(x instanceof InternetAddress ? ((InternetAddress) x).toUnicodeString() : x.toString());
+                  }
+                  return sb.toString();
+              }
+
+              private static JSONObject summary(IMAPFolder f, javax.mail.Message m) throws Exception {
+                  JSONObject o = new JSONObject();
+                  o.put("uid", f.getUID(m));
+                  o.put("folder", f.getFullName());
+                  Address[] fr = m.getFrom();
+                  InternetAddress a = fr != null && fr.length > 0 && fr[0] instanceof InternetAddress ? (InternetAddress) fr[0] : null;
+                  String name = a == null ? "(unknown)" : (a.getPersonal() != null && !a.getPersonal().trim().isEmpty() ? a.getPersonal() : a.getAddress());
+                  o.put("from", name);
+                  o.put("email", a == null ? "" : a.getAddress());
+                  o.put("to", addrs(m.getRecipients(javax.mail.Message.RecipientType.TO)));
+                  String subj = m.getSubject();
+                  o.put("subj", subj == null || subj.trim().isEmpty() ? "(no subject)" : subj);
+                  java.util.Date d = m.getReceivedDate();
+                  if (d == null) d = m.getSentDate();
+                  o.put("t", d == null ? 0 : d.getTime());
+                  o.put("seen", m.isSet(Flags.Flag.SEEN));
+                  o.put("star", m.isSet(Flags.Flag.FLAGGED));
+                  String ct = m.getContentType();
+                  o.put("att", ct != null && ct.toLowerCase().startsWith("multipart/mixed"));
+                  return o;
+              }
+
+              private static FetchProfile listProfile() {
+                  FetchProfile fp = new FetchProfile();
+                  fp.add(FetchProfile.Item.ENVELOPE);
+                  fp.add(FetchProfile.Item.FLAGS);
+                  fp.add(FetchProfile.Item.CONTENT_INFO);
+                  fp.add(UIDFolder.FetchProfileItem.UID);
+                  return fp;
+              }
+
+              /* ---- body walking ---- */
+              private static class Body {
+                  String text, html;
+                  final List<Part> atts = new ArrayList<>();
+              }
+
+              private static String str(Object c) throws Exception {
+                  if (c instanceof String) return (String) c;
+                  if (c instanceof InputStream) return new String(readAll((InputStream) c), StandardCharsets.UTF_8);
+                  return c == null ? "" : c.toString();
+              }
+
+              private static byte[] readAll(InputStream in) throws Exception {
+                  ByteArrayOutputStream bo = new ByteArrayOutputStream();
+                  byte[] buf = new byte[16384];
+                  int n;
+                  while ((n = in.read(buf)) > 0) bo.write(buf, 0, n);
+                  in.close();
+                  return bo.toByteArray();
+              }
+
+              private static void walk(Part p, Body b) throws Exception {
+                  String disp = p.getDisposition(), fn = null;
+                  try { fn = p.getFileName(); } catch (Exception ignored) { }
+                  if (p.isMimeType("multipart/*")) {
+                      Multipart mp = (Multipart) p.getContent();
+                      for (int i = 0; i < mp.getCount(); i++) walk(mp.getBodyPart(i), b);
+                  } else if (p.isMimeType("message/rfc822")) {
+                      Object c = p.getContent();
+                      if (c instanceof Part) walk((Part) c, b);
+                  } else if (Part.ATTACHMENT.equalsIgnoreCase(disp) || (fn != null && !p.isMimeType("text/*"))) {
+                      b.atts.add(p);
+                  } else if (p.isMimeType("text/plain")) {
+                      if (b.text == null) b.text = str(p.getContent());
+                  } else if (p.isMimeType("text/html")) {
+                      if (b.html == null) b.html = str(p.getContent());
+                  } else if (fn != null) {
+                      b.atts.add(p);
+                  }
+              }
+
+              private static String plain(Body b) {
+                  if (b.text != null && !b.text.trim().isEmpty()) return b.text;
+                  if (b.html == null) return "";
+                  String h = b.html.replaceAll("(?is)<(style|script|head)[^>]*>.*?</\\1>", " ")
+                          .replaceAll("(?i)<br\\s*/?>|</p>|</div>|</tr>|</h[1-6]>", "\n")
+                          .replaceAll("<[^>]+>", " ")
+                          .replace("&nbsp;", " ").replace("&amp;", "&").replace("&lt;", "<")
+                          .replace("&gt;", ">").replace("&quot;", "\"").replace("&#39;", "'").replace("&pound;", "£");
+                  return h.replaceAll("[ \\t\\x0B\\f\\r]+", " ").replaceAll("\\n\\s*\\n+", "\n\n").trim();
+              }
+
+              private static String header(javax.mail.Message m, String name) throws Exception {
+                  String[] h = m.getHeader(name);
+                  return h == null || h.length == 0 ? "" : h[0];
+              }
+
+              private javax.mail.Message byUid(IMAPFolder f, long uid) throws Exception {
+                  javax.mail.Message m = f.getMessageByUID(uid);
+                  if (m == null) throw new Exception("That email no longer exists");
+                  return m;
+              }
+
+              /* ---------------- methods callable from the UI ---------------- */
+
+              private Object run(String method, JSONObject a) throws Exception {
+                  switch (method) {
+                      case "status": {
+                          JSONObject o = new JSONObject();
+                          o.put("email", email == null ? JSONObject.NULL : email);
+                          return o;
+                      }
+                      case "login": {
+                          String e = a.getString("email").trim(), p = a.getString("password").replace(" ", "");
+                          IMAPStore st;
+                          try {
+                              st = connect(e, p);
+                          } catch (javax.mail.AuthenticationFailedException ex) {
+                              throw new Exception("Gmail rejected that email or app password. Check both and try again.");
+                          }
+                          closeAll();
+                          store = st;
+                          email = e;
+                          password = p;
+                          saveAccount(e, p);
+                          JSONObject o = new JSONObject();
+                          o.put("email", e);
+                          return o;
+                      }
+                      case "logout": {
+                          closeAll();
+                          email = null;
+                          password = null;
+                          prefs().edit().clear().apply();
+                          return new JSONObject();
+                      }
+                      case "folders": {
+                          JSONObject sp = new JSONObject();
+                          JSONArray labels = new JSONArray();
+                          sp.put("inbox", "INBOX");
+                          for (Folder f : store().getDefaultFolder().list("*")) {
+                              String[] attrs = ((IMAPFolder) f).getAttributes();
+                              String role = null;
+                              boolean noSelect = false;
+                              for (String at : attrs) {
+                                  switch (at) {
+                                      case "\\All": role = "all"; break;
+                                      case "\\Sent": role = "sent"; break;
+                                      case "\\Trash": role = "trash"; break;
+                                      case "\\Drafts": role = "drafts"; break;
+                                      case "\\Junk": role = "spam"; break;
+                                      case "\\Flagged": role = "starred"; break;
+                                      case "\\Important": role = "important"; break;
+                                      case "\\Noselect": noSelect = true; break;
+                                      default: break;
+                                  }
+                              }
+                              if (role != null) sp.put(role, f.getFullName());
+                              else if (!noSelect && !"INBOX".equalsIgnoreCase(f.getFullName())) labels.put(f.getFullName());
+                          }
+                          JSONObject o = new JSONObject();
+                          o.put("special", sp);
+                          o.put("labels", labels);
+                          return o;
+                      }
+                      case "list": {
+                          IMAPFolder f = folder(a.getString("folder"));
+                          int offset = a.optInt("offset", 0), count = a.optInt("count", 40);
+                          int total = f.getMessageCount();
+                          int end = total - offset, start = Math.max(1, end - count + 1);
+                          JSONArray items = new JSONArray();
+                          if (end >= 1) {
+                              javax.mail.Message[] ms = f.getMessages(start, end);
+                              f.fetch(ms, listProfile());
+                              for (int i = ms.length - 1; i >= 0; i--) {
+                                  try { items.put(summary(f, ms[i])); } catch (Exception ignored) { }
+                              }
+                          }
+                          JSONObject o = new JSONObject();
+                          o.put("total", total);
+                          o.put("items", items);
+                          return o;
+                      }
+                      case "snippets": {
+                          IMAPFolder f = folder(a.getString("folder"));
+                          JSONArray uids = a.getJSONArray("uids");
+                          long[] u = new long[uids.length()];
+                          for (int i = 0; i < u.length; i++) u[i] = uids.getLong(i);
+                          JSONObject out = new JSONObject();
+                          for (javax.mail.Message m : f.getMessagesByUID(u)) {
+                              if (m == null) continue;
+                              try {
+                                  ((IMAPMessage) m).setPeek(true);
+                                  Body b = new Body();
+                                  walk(m, b);
+                                  String t = plain(b).replaceAll("\\s+", " ").trim();
+                                  out.put(String.valueOf(f.getUID(m)), t.length() > 600 ? t.substring(0, 600) : t);
+                              } catch (Exception ignored) { }
+                          }
+                          return out;
+                      }
+                      case "body": {
+                          IMAPFolder f = folder(a.getString("folder"));
+                          javax.mail.Message m = byUid(f, a.getLong("uid"));
+                          ((IMAPMessage) m).setPeek(true);
+                          Body b = new Body();
+                          walk(m, b);
+                          if (!m.isSet(Flags.Flag.SEEN)) m.setFlag(Flags.Flag.SEEN, true);
+                          JSONObject o = summary(f, m);
+                          o.put("text", plain(b));
+                          o.put("html", b.html == null ? JSONObject.NULL : b.html);
+                          o.put("cc", addrs(m.getRecipients(javax.mail.Message.RecipientType.CC)));
+                          o.put("replyTo", addrs(m.getReplyTo()));
+                          o.put("messageId", header(m, "Message-ID"));
+                          o.put("references", header(m, "References"));
+                          o.put("unsub", header(m, "List-Unsubscribe"));
+                          JSONArray at = new JSONArray();
+                          for (int i = 0; i < b.atts.size(); i++) {
+                              Part p = b.atts.get(i);
+                              JSONObject x = new JSONObject();
+                              String fn = null;
+                              try { fn = p.getFileName(); } catch (Exception ignored) { }
+                              x.put("idx", i);
+                              x.put("name", fn == null ? "attachment-" + (i + 1) : fn);
+                              x.put("size", Math.max(0, p.getSize()));
+                              at.put(x);
+                          }
+                          o.put("attachments", at);
+                          return o;
+                      }
+                      case "attachment": {
+                          if (Build.VERSION.SDK_INT < 29) throw new Exception("Saving attachments needs Android 10 or newer");
+                          IMAPFolder f = folder(a.getString("folder"));
+                          javax.mail.Message m = byUid(f, a.getLong("uid"));
+                          ((IMAPMessage) m).setPeek(true);
+                          Body b = new Body();
+                          walk(m, b);
+                          Part p = b.atts.get(a.getInt("idx"));
+                          String name = p.getFileName() == null ? "attachment" : p.getFileName();
+                          String mime = p.getContentType() == null ? "application/octet-stream" : p.getContentType().split(";")[0].trim().toLowerCase();
+                          ContentValues cv = new ContentValues();
+                          cv.put(MediaStore.Downloads.DISPLAY_NAME, name);
+                          cv.put(MediaStore.Downloads.MIME_TYPE, mime);
+                          cv.put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS + "/Brisk");
+                          Uri uri = getContentResolver().insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, cv);
+                          if (uri == null) throw new Exception("Couldn't save to Downloads");
+                          try (OutputStream out = getContentResolver().openOutputStream(uri); InputStream in = p.getInputStream()) {
+                              byte[] buf = new byte[16384];
+                              int n;
+                              while ((n = in.read(buf)) > 0) out.write(buf, 0, n);
+                          }
+                          final Uri fu = uri;
+                          final String fm = mime;
+                          runOnUiThread(() -> {
+                              try {
+                                  startActivity(new Intent(Intent.ACTION_VIEW).setDataAndType(fu, fm)
+                                          .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK));
+                              } catch (Exception ignored) { }
+                          });
+                          JSONObject o = new JSONObject();
+                          o.put("saved", "Downloads/Brisk/" + name);
+                          return o;
+                      }
+                      case "search": {
+                          IMAPFolder f = folder(a.getString("folder"));
+                          final String q = a.getString("query");
+                          @SuppressWarnings("unchecked")
+                          List<Long> uids = (List<Long>) f.doCommand(pr -> {
+                              Argument args = new Argument();
+                              args.writeAtom("X-GM-RAW");
+                              args.writeString(q);
+                              Response[] rs = pr.command("UID SEARCH", args);
+                              List<Long> found = new ArrayList<>();
+                              for (Response r : rs) {
+                                  if (r instanceof IMAPResponse && ((IMAPResponse) r).keyEquals("SEARCH")) {
+                                      long n;
+                                      while ((n = r.readNumber()) != -1) found.add(n);
+                                  }
+                              }
+                              pr.notifyResponseHandlers(rs);
+                              pr.handleResult(rs[rs.length - 1]);
+                              return found;
+                          });
+                          int max = a.optInt("count", 60);
+                          int from = Math.max(0, uids.size() - max);
+                          long[] u = new long[uids.size() - from];
+                          for (int i = 0; i < u.length; i++) u[i] = uids.get(from + i);
+                          JSONArray items = new JSONArray();
+                          if (u.length > 0) {
+                              javax.mail.Message[] ms = f.getMessagesByUID(u);
+                              List<javax.mail.Message> ok = new ArrayList<>();
+                              for (javax.mail.Message m : ms) if (m != null) ok.add(m);
+                              javax.mail.Message[] arr = ok.toArray(new javax.mail.Message[0]);
+                              f.fetch(arr, listProfile());
+                              for (int i = arr.length - 1; i >= 0; i--) {
+                                  try { items.put(summary(f, arr[i])); } catch (Exception ignored) { }
+                              }
+                          }
+                          JSONObject o = new JSONObject();
+                          o.put("total", uids.size());
+                          o.put("items", items);
+                          return o;
+                      }
+                      case "act": {
+                          IMAPFolder f = folder(a.getString("folder"));
+                          JSONArray ua = a.getJSONArray("uids");
+                          long[] u = new long[ua.length()];
+                          for (int i = 0; i < u.length; i++) u[i] = ua.getLong(i);
+                          javax.mail.Message[] ms = f.getMessagesByUID(u);
+                          List<javax.mail.Message> ok = new ArrayList<>(Arrays.asList(ms));
+                          ok.removeIf(x -> x == null);
+                          javax.mail.Message[] arr = ok.toArray(new javax.mail.Message[0]);
+                          if (arr.length == 0) return new JSONObject();
+                          String op = a.getString("op");
+                          switch (op) {
+                              case "read": f.setFlags(arr, new Flags(Flags.Flag.SEEN), true); break;
+                              case "unread": f.setFlags(arr, new Flags(Flags.Flag.SEEN), false); break;
+                              case "star": f.setFlags(arr, new Flags(Flags.Flag.FLAGGED), true); break;
+                              case "unstar": f.setFlags(arr, new Flags(Flags.Flag.FLAGGED), false); break;
+                              case "move": {
+                                  IMAPFolder to = (IMAPFolder) store().getFolder(a.getString("to"));
+                                  f.moveMessages(arr, to);
+                                  break;
+                              }
+                              default: throw new Exception("Unknown action " + op);
+                          }
+                          return new JSONObject();
+                      }
+                      default:
+                          throw new Exception("Unknown method " + method);
+                  }
+              }
+
+              private Object send(JSONObject a) throws Exception {
+                  if (email == null) throw new Exception("Not signed in");
+                  Properties pr = new Properties();
+                  pr.put("mail.smtp.host", SMTP_HOST);
+                  pr.put("mail.smtp.port", "465");
+                  pr.put("mail.smtp.ssl.enable", "true");
+                  pr.put("mail.smtp.auth", "true");
+                  pr.put("mail.smtp.connectiontimeout", "15000");
+                  pr.put("mail.smtp.timeout", "60000");
+                  Session s = Session.getInstance(pr);
+                  MimeMessage mm = new MimeMessage(s);
+                  String name = a.optString("name", "");
+                  mm.setFrom(name.isEmpty() ? new InternetAddress(email) : new InternetAddress(email, name, "UTF-8"));
+                  mm.setRecipients(javax.mail.Message.RecipientType.TO, InternetAddress.parse(a.getString("to")));
+                  String cc = a.optString("cc", "").trim();
+                  if (!cc.isEmpty()) mm.setRecipients(javax.mail.Message.RecipientType.CC, InternetAddress.parse(cc));
+                  mm.setSubject(a.optString("subject", ""), "UTF-8");
+                  String inReply = a.optString("inReplyTo", "");
+                  if (!inReply.isEmpty()) {
+                      mm.setHeader("In-Reply-To", inReply);
+                      String refs = a.optString("references", "").trim();
+                      mm.setHeader("References", (refs.isEmpty() ? "" : refs + " ") + inReply);
+                  }
+                  JSONArray atts = a.optJSONArray("attachments");
+                  if (atts != null && atts.length() > 0) {
+                      MimeMultipart mp = new MimeMultipart();
+                      MimeBodyPart tp = new MimeBodyPart();
+                      tp.setText(a.optString("body", ""), "UTF-8");
+                      mp.addBodyPart(tp);
+                      for (int i = 0; i < atts.length(); i++) {
+                          JSONObject x = atts.getJSONObject(i);
+                          byte[] bytes = Base64.decode(x.getString("b64"), Base64.DEFAULT);
+                          MimeBodyPart ap = new MimeBodyPart();
+                          ap.setDataHandler(new DataHandler(new ByteArrayDataSource(bytes, x.optString("mime", "application/octet-stream"))));
+                          ap.setFileName(x.optString("name", "file"));
+                          mp.addBodyPart(ap);
+                      }
+                      mm.setContent(mp);
+                  } else {
+                      mm.setText(a.optString("body", ""), "UTF-8");
+                  }
+                  mm.setSentDate(new java.util.Date());
+                  Transport.send(mm, email, password);
+                  return new JSONObject();
+              }
+
+              private void reply(int id, boolean ok, String json) {
+                  web.post(() -> web.evaluateJavascript("window.__brisk(" + id + "," + ok + "," + json + ")", null));
+              }
+
+              private static String friendly(Exception e) {
+                  String m = e.getMessage();
+                  if (e instanceof java.net.UnknownHostException || (m != null && m.contains("Couldn't connect")))
+                      return "No connection to Gmail. Check your internet.";
+                  return m == null ? e.getClass().getSimpleName() : m;
+              }
+
+              private class Bridge {
+                  @JavascriptInterface
+                  public void call(int id, String method, String json) {
+                      ExecutorService pool = "send".equals(method) ? smtpPool : imapPool;
+                      pool.execute(() -> {
+                          try {
+                              JSONObject args = json == null || json.isEmpty() ? new JSONObject() : new JSONObject(json);
+                              Object r;
+                              if ("send".equals(method)) r = send(args);
+                              else {
+                                  try {
+                                      r = run(method, args);
+                                  } catch (javax.mail.FolderClosedException | javax.mail.StoreClosedException ex) {
+                                      closeAll(); // dropped connection: reconnect once and retry
+                                      r = run(method, args);
+                                  }
+                              }
+                              reply(id, true, r.toString());
+                          } catch (Exception e) {
+                              reply(id, false, JSONObject.quote(friendly(e)));
+                          }
+                      });
+                  }
+
+                  @JavascriptInterface
+                  public void openUrl(String url) {
+                      runOnUiThread(() -> openExternal(url));
+                  }
+
+                  @JavascriptInterface
+                  public String version() {
+                      try {
+                          return getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
+                      } catch (Exception e) {
+                          return "";
+                      }
+                  }
+              }
+          }
+          BRISK_EOF
+          mkdir -p android/app/src/main/assets
+          cp index.html android/app/src/main/assets/index.html
+          base64 -d > android/app/brisk.keystore <<'BRISK_EOF'
+          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
+          I5YsbQICJxA=
+          BRISK_EOF
+
+      - name: Build signed APK
+        working-directory: android
+        run: gradle assembleRelease --no-daemon --stacktrace
+
+      - name: Rename APK
+        run: cp android/app/build/outputs/apk/release/app-release.apk Brisk.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Brisk-apk
+          path: Brisk.apk
+
+      - name: Publish to the "latest" release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: Brisk (latest build)
+          body: |
+            Build ${{ github.run_number }}. On your phone, download Brisk.apk below and open it to install or update.
+          files: Brisk.apk
+          make_latest: true
