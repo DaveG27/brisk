@@ -166,6 +166,16 @@ svg.i{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke
 .nav.rm{color:#ff9ab5;font-size:13px;min-height:36px}
 .nav.addacc{color:var(--sky);font-weight:600;margin-top:8px;border-top:1px solid #1d3d62;border-radius:0}
 .field select{flex:1;border:0;background:none;min-height:48px;outline:0;font-size:16px}
+.selbar{display:none;background:#123459;color:#fff;align-items:center;gap:2px;padding:8px 6px}
+.selbar .ib{width:44px;height:44px;display:grid;place-items:center;color:#fff}
+.selbar b{flex:1;font-size:16px;padding-left:4px;white-space:nowrap}
+.selbar .txt{color:var(--sky);font-weight:700;padding:0 10px;min-height:44px}
+#app.picking .top{display:none}#app.picking .selbar{display:flex}#app.picking .fab{display:none}
+.row{-webkit-user-select:none;user-select:none}
+.ck{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;border:2px solid var(--mute);margin-right:8px;vertical-align:-4px;font-size:12px;line-height:1;color:transparent;flex:none}
+.row.picked{background:var(--sel)}.row.picked .ck{background:#2e8bd6;border-color:#2e8bd6;color:#fff}
+#app.picking .row.unread .from::before{display:none}
+.stat .acts{display:flex;gap:4px;align-items:center}
 @media(min-width:900px){
  body{display:grid;grid-template-columns:minmax(360px,440px) minmax(0,1fr)}
  #app{border-right:1px solid var(--line)}
@@ -232,8 +242,17 @@ svg.i{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke
    <input id="q" type="search" placeholder="Search all mail" autocomplete="off" aria-label="Search mail" spellcheck="false"></div>
   <button class="av" id="avbtn" aria-label="Accounts">B</button>
  </header>
+ <div class="selbar" id="selbar" role="toolbar" aria-label="Selected emails">
+  <button class="ib" id="selx" aria-label="Cancel selection"><svg class="i"><use href="#i-close"/></svg></button>
+  <b id="selcount">Select emails</b>
+  <button class="txt" data-bulk="all" id="selall">All</button>
+  <button class="ib" data-bulk="read" aria-label="Mark read or unread" title="Read / unread"><svg class="i"><use href="#i-mail"/></svg></button>
+  <button class="ib" data-bulk="star" aria-label="Star" title="Star"><svg class="i"><use href="#i-star"/></svg></button>
+  <button class="ib" data-bulk="archive" aria-label="Archive" title="Archive"><svg class="i"><use href="#i-archive"/></svg></button>
+  <button class="ib" data-bulk="trash" aria-label="Delete" title="Delete"><svg class="i"><use href="#i-trash"/></svg></button>
+ </div>
  <div class="chips" id="chips"></div>
- <div class="stat"><span id="stat"></span><button id="refresh" aria-label="Refresh"><svg class="i"><use href="#i-refresh"/></svg></button></div>
+ <div class="stat"><span id="stat"></span><span class="acts"><button id="selbtn">Select</button><button id="refresh" aria-label="Refresh"><svg class="i"><use href="#i-refresh"/></svg></button></span></div>
  <div id="rows" role="list"></div>
  <button class="fab" id="fab"><svg class="i"><use href="#i-pen"/></svg>Compose</button>
 </div>
@@ -447,9 +466,9 @@ function rowHtml(m, hits) {
   const a = accById(m.acct);
   const badge = multi() && (S.acct === 'all' || S.query) && a ? `<span class="abadge" style="background:${acol(m.acct)}" title="${esc(a.email)}">${esc(({gmail:'G',virgin:'V',yahoo:'Y',icloud:'i'})[a.provider] || a.email[0].toUpperCase())}</span>` : '';
   return `<div class="rw" data-k="${esc(key(m))}"><div class="under"><span>${ico('archive')}</span><span>${ico('trash')}</span></div>
-  <div class="row ${m.seen ? '' : 'unread'} ${S.sel === key(m) ? 'sel' : ''}" role="listitem" tabindex="0">
+  <div class="row ${m.seen ? '' : 'unread'} ${S.sel === key(m) && !S.pick ? 'sel' : ''} ${picked.has(key(m)) ? 'picked' : ''}" role="listitem" tabindex="0"${S.pick ? ` aria-selected="${picked.has(key(m))}"` : ''}>
    <span class="bar" style="background:${L.c}"></span>
-   <span class="from">${hl(who, hits)}</span>
+   <span class="from">${S.pick ? '<span class="ck">✓</span>' : ''}${hl(who, hits)}</span>
    <span class="time">${m.star ? `<span class="star">★</span>` : ''}${m.att ? ico('clip') : ''}${fmt(m.t)}${badge}</span>
    <span class="subj"><span class="tag" style="background:${L.c}">${L.name}</span>${hl(m.subj, hits)}</span>
    <span class="snip">${hl(m.snip || ' ', hits)}</span></div></div>`;
@@ -577,7 +596,7 @@ function move(items, op) {
   renderList();
   const word = {archive:'Archived', trash:'Moved to Bin', spam:'Reported as spam', inbox:'Moved to Inbox'}[op];
   pending = {items, op, timer: setTimeout(flush, 4600), undo() { S.items = before; S.server = beforeServer; renderList(); }};
-  toast(items.length > 1 ? `${word} ${items.length} emails` : word, true);
+  toast(items.length > 1 ? `${items.length} emails ${word === 'Moved to Bin' ? 'moved to Bin' : word === 'Moved to Inbox' ? 'moved to Inbox' : word.toLowerCase()}` : word, true);
 }
 function flush() {
   if (!pending) return;
@@ -740,19 +759,63 @@ function unsubscribe(m) {
   }]]);
 }
 
+/* ================= multi-select ================= */
+const picked = new Set();
+function startPick(k) { S.pick = true; if (k) picked.add(k); updatePick(); }
+function togglePick(k) { picked.has(k) ? picked.delete(k) : picked.add(k); updatePick(); }
+function clearPick() { S.pick = false; picked.clear(); updatePick(); }
+function updatePick() {
+  for (const k of [...picked]) if (!byKey(k)) picked.delete(k);
+  $('app').classList.toggle('picking', !!S.pick);
+  $('selcount').textContent = picked.size ? `${picked.size} selected` : 'Tap emails to select';
+  $('selall').textContent = shown.length && shown.every(m => picked.has(key(m))) ? 'None' : 'All';
+  renderList();
+}
+function flagMany(items, op) {
+  const groups = {};
+  for (const m of items) {
+    if (op === 'star' || op === 'unstar') m.star = op === 'star';
+    if (op === 'read' || op === 'unread') m.seen = op === 'read';
+    const g = m.acct + '\n' + m.folder; (groups[g] = groups[g] || []).push(m.uid);
+  }
+  for (const g in groups) { const [acct, folder] = g.split('\n'); call('act', {acct, folder, uids: groups[g], op}).catch(e => toast(e.message)); }
+  saveCache();
+}
+$('selbtn').onclick = () => startPick();
+$('selx').onclick = clearPick;
+$('selbar').onclick = e => {
+  const b = e.target.closest('[data-bulk]'); if (!b) return;
+  const op = b.dataset.bulk, items = [...picked].map(byKey).filter(Boolean);
+  if (op === 'all') {
+    if (shown.length && shown.every(m => picked.has(key(m)))) picked.clear(); else shown.forEach(m => picked.add(key(m)));
+    return updatePick();
+  }
+  if (!items.length) { toast('Tap emails to select them first'); return; }
+  if (op === 'trash' || op === 'archive') { clearPick(); move(items, op); return; }
+  if (op === 'read') { const all = items.every(m => m.seen); flagMany(items, all ? 'unread' : 'read'); toast(`${items.length} marked ${all ? 'unread' : 'read'}`); }
+  if (op === 'star') { const all = items.every(m => m.star); flagMany(items, all ? 'unstar' : 'star'); toast(`${items.length} ${all ? 'unstarred' : 'starred'}`); }
+  clearPick();
+};
+let lpT = null, lpAt = 0;
+
 /* ================= swipe ================= */
 let sw = null;
 $('rows').addEventListener('touchstart', e => {
   const rw = e.target.closest('.rw'); if (!rw) return;
-  const t = e.touches[0]; sw = {rw, row: rw.querySelector('.row'), x: t.clientX, y: t.clientY, dx: 0, on: false};
+  const t = e.touches[0]; sw = S.pick ? null : {rw, row: rw.querySelector('.row'), x: t.clientX, y: t.clientY, dx: 0, on: false};
+  clearTimeout(lpT); const sx = t.clientX, sy = t.clientY;
+  lpT = setTimeout(() => { lpT = null; lpAt = Date.now(); if (sw && sw.on) return; sw = null; if (!S.pick) startPick(rw.dataset.k); else togglePick(rw.dataset.k); try { navigator.vibrate && navigator.vibrate(18); } catch (er) {} }, 450);
+  rw._lp = {sx, sy};
 }, {passive: true});
 $('rows').addEventListener('touchmove', e => {
+  if (lpT) { const t0 = e.touches[0], rw0 = e.target.closest('.rw'); if (!rw0 || !rw0._lp || Math.abs(t0.clientX - rw0._lp.sx) > 10 || Math.abs(t0.clientY - rw0._lp.sy) > 10) { clearTimeout(lpT); lpT = null; } }
   if (!sw) return; const t = e.touches[0], dx = t.clientX - sw.x, dy = t.clientY - sw.y;
   if (!sw.on) { if (Math.abs(dy) > 12) { sw = null; return; } if (Math.abs(dx) > 14) sw.on = true; else return; }
   sw.dx = dx; sw.row.style.transform = `translateX(${dx}px)`;
   sw.rw.querySelector('.under').className = 'under ' + (dx > 0 ? 'l' : 'r');
 }, {passive: true});
 $('rows').addEventListener('touchend', () => {
+  clearTimeout(lpT); lpT = null;
   if (!sw) return; const s = sw; sw = null; if (!s.on) return;
   s.row.style.transition = 'transform .15s';
   const m = byKey(s.rw.dataset.k), w = s.rw.clientWidth;
@@ -990,7 +1053,7 @@ $('drawer').addEventListener('change', e => {
   ls.set('brisk-settings', settings);
 });
 function setView(acct, view, path) {
-  flush(); S.acct = acct; S.view = view; S.src = acct === 'all' ? [] : [{acct, path: path || 'INBOX'}];
+  flush(); S.pick = false; picked.clear(); $('app').classList.remove('picking'); S.acct = acct; S.view = view; S.src = acct === 'all' ? [] : [{acct, path: path || 'INBOX'}];
   S.filter = null; S.sel = null; S.query = ''; S.server = null; $('q').value = '';
   $('reader').classList.remove('open'); renderChips(); renderReader(); loadView(true);
 }
@@ -1010,8 +1073,15 @@ $('chips').onclick = e => { const c = e.target.closest('.chip'); if (!c) return;
 $('rows').onclick = e => {
   if (e.target.id === 'more') return loadMore();
   const rw = e.target.closest('.rw'); if (!rw || rw.dataset.swiped) return;
+  if (Date.now() - lpAt < 600) return;
+  if (S.pick) return togglePick(rw.dataset.k);
   const m = byKey(rw.dataset.k); if (m) openMail(m);
 };
+$('rows').addEventListener('contextmenu', e => {
+  const rw = e.target.closest('.rw'); if (!rw) return;
+  e.preventDefault(); if (Date.now() - lpAt < 800) return;
+  S.pick ? togglePick(rw.dataset.k) : startPick(rw.dataset.k);
+});
 $('rows').onkeydown = e => { if (e.key === 'Enter') { const rw = e.target.closest('.rw'); const m = rw && byKey(rw.dataset.k); if (m) openMail(m); } };
 $('reader').onclick = e => {
   const a = e.target.closest('[data-a]'); if (a) return readerAction(a.dataset.a);
@@ -1062,6 +1132,9 @@ document.addEventListener('keydown', e => {
   else if (k === 'j' || k === 'ArrowDown') { e.preventDefault(); go(shown[Math.min(shown.length - 1, i + 1)]); }
   else if (k === 'k' || k === 'ArrowUp') { e.preventDefault(); go(shown[Math.max(0, i - 1)]); }
   else if (k === 'c') { e.preventDefault(); openCompose(); }
+  else if (k === 'x' && S.sel) { S.pick ? togglePick(S.sel) : startPick(S.sel); }
+  else if (S.pick && (k === '#' || k === 'Delete')) { const its = [...picked].map(byKey).filter(Boolean); if (its.length) { clearPick(); move(its, 'trash'); } }
+  else if (S.pick && k === 'e') { const its = [...picked].map(byKey).filter(Boolean); if (its.length) { clearPick(); move(its, 'archive'); } }
   else if (m && k === 'e') move([m], 'archive');
   else if (m && k === '#') move([m], 'trash');
   else if (m && k === 's') flag(m, m.star ? 'unstar' : 'star');
@@ -1071,6 +1144,7 @@ document.addEventListener('keydown', e => {
 });
 window.briskBack = () => {
   if (!$('dlg').classList.contains('hide')) { closeDialog(); return true; }
+  if (S.pick && !$('compose').classList.contains('open')) { clearPick(); return true; }
   if (!$('login').classList.contains('hide') && S.accounts.length) { showLogin(false); return true; }
   if ($('compose').classList.contains('open')) { $('cclose').click(); return true; }
   if ($('drawer').classList.contains('open')) { openDrawer(false); return true; }
