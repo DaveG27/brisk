@@ -828,7 +828,7 @@ function renderReader() {
     }).join('');
   } else content = bodyHtml(b, m) + attsHtml(bOk ? b : null);
   const quick = !warn && m.folder !== sp.sent && (QUICK[m.label] || []).length ? `<div class="quick">${QUICK[m.label].map(q => `<button data-qr="${esc(q)}">${esc(q)}</button>`).join('')}</div>` : '';
-  const unsub = (bOk && b.unsub ? `<button class="chip" data-a="unsub" style="margin-top:16px">Unsubscribe from ${esc(m.from)}</button> ` : '') +
+  const unsub = (bOk && (b.unsub || m.label === 'news' || /unsubscri/i.test(b.text || '')) && m.folder !== sp.sent ? `<button class="chip" data-a="unsub" style="margin-top:16px">${unsubbed[m.acct + '|' + (m.email || '').toLowerCase()] ? 'Unsubscribed ✓ (try again)' : 'Unsubscribe from ' + esc(m.from)}</button> ` : '') +
     (m.email && m.folder !== sp.sent && !inTrash ? `<button class="chip" data-a="delsender" style="margin-top:16px;color:var(--pink);border-color:var(--pink)">Delete all from ${esc(m.from)}</button>` : '');
   const until = S.snz.get(m.mid);
   r.innerHTML = `<div class="rbar">
@@ -897,16 +897,35 @@ function recolour(m) {
   });
 }
 function relabel() { for (const p in cache) withLabel(cache[p]); withLabel(S.items); if (S.server) withLabel(S.server); saveCache(); renderList(); renderReader(); renderDrawer(); }
-function unsubscribe(m, hdr) {
-  const h = hdr || (S.cur && S.cur.unsub) || '', web = (h.match(/<(https?:[^>]+)>/) || [])[1], mail = (h.match(/<mailto:([^>]+)>/i) || [])[1];
-  dialog(`<p>Unsubscribe from <b>${esc(m.from)}</b>? ${web ? 'Their unsubscribe page will open.' : 'Brisk will send them an unsubscribe email for you.'}</p>`, [['Cancel'], ['Unsubscribe', 'pri', async () => {
-    if (web) openUrl(web);
-    else if (mail) {
-      const [to, qs] = mail.split('?'); const p = new URLSearchParams(qs || '');
-      try { await call('send', {acct: m.acct, to: decodeURIComponent(to), subject: p.get('subject') || 'unsubscribe', body: p.get('body') || 'unsubscribe', name: settings.name}); toast('Unsubscribe email sent'); } catch (e) { toast(e.message); }
+let unsubbed = ls.get('brisk-unsubbed', {});
+function senderCands(m) {
+  const em = (m.email || '').toLowerCase();
+  const list = allCached().filter(x => x.acct === m.acct && (x.email || '').toLowerCase() === em && !/trash|bin|spam|junk/i.test(x.folder)).sort((p, q) => q.t - p.t);
+  const out = [m].concat(list.filter(x => key(x) !== key(m))).slice(0, 4);
+  return out.map(x => ({folder: x.folder, uid: x.uid}));
+}
+async function unsubscribe(m, btn) {
+  const em = (m.email || '').toLowerCase();
+  const go = async () => {
+    if (btn) { btn.disabled = true; btn.textContent = 'Unsubscribing…'; }
+    toast('Unsubscribing from ' + m.from + '…', false, 30000);
+    let r;
+    try { r = DEMO ? {method: 'oneclick'} : await call('unsubscribe', {acct: m.acct, cands: senderCands(m)}); }
+    catch (e) { toast('Couldn’t unsubscribe: ' + e.message); if (btn) { btn.disabled = false; btn.textContent = 'Unsubscribe'; } return; }
+    if (btn) { btn.disabled = false; btn.textContent = 'Unsubscribe'; }
+    if (r.method === 'none') { toast('No unsubscribe option in their emails. Report as spam or use Delete all instead.'); return; }
+    if (r.method === 'web') {
+      openUrl(r.url);
+      toast('Their unsubscribe page has opened. Confirm it there.', false, 6000);
+    } else {
+      unsubbed[m.acct + '|' + em] = Date.now(); ls.set('brisk-unsubbed', unsubbed);
+      $('toast').classList.remove('show');
+      if (btn) { btn.textContent = 'Unsubscribed ✓'; btn.disabled = true; }
+      dialog(`<p>Unsubscribed from <b>${esc(m.from)}</b>${r.method === 'email' ? ' (Brisk emailed their list to remove you)' : ''}. Some senders take a few days to stop.</p><p>Also delete all their emails?</p>`,
+        [['Keep them'], ['Delete all', 'pri', () => deleteAllFromSenders([{acct: m.acct, email: m.email, from: m.from}])]]);
     }
-    move([m], 'trash');
-  }]]);
+  };
+  dialog(`<p>Unsubscribe from <b>${esc(m.from)}</b>?</p>`, [['Cancel'], ['Unsubscribe', 'pri', go]]);
 }
 
 /* ================= snooze, delete forever, calendar ================= */
@@ -1503,15 +1522,9 @@ function cleanupPanel() {
   const list = bulkSenders().slice(0, 30);
   sheet('Clean up', `<p class="sumline">Senders filling your inbox most, from the emails on this phone. <b style="font-size:inherit">Delete all</b> also finds older ones on the server.</p>` +
     (list.map((e, i) => `<div class="srow"><div class="grow"><b>${esc(e.from)}</b><small>${e.n} email${e.n > 1 ? 's' : ''}${e.unread ? ' · ' + e.unread + ' unread' : ''}${multi() ? ' · ' + esc((accById(e.acct) || {}).email || '') : ''}</small></div>
-      ${e.bulk ? `<button data-unsub="${i}">Unsubscribe</button>` : ''}<button class="dang" data-delall="${i}">Delete all</button></div>`).join('') || '<p class="sumline">Nothing to clean up. Nice.</p>'), box => {
+      <button data-unsub="${i}" ${unsubbed[e.acct + '|' + e.email.toLowerCase()] ? 'disabled' : ''}>${unsubbed[e.acct + '|' + e.email.toLowerCase()] ? 'Unsubscribed ✓' : 'Unsubscribe'}</button><button class="dang" data-delall="${i}">Delete all</button></div>`).join('') || '<p class="sumline">Nothing to clean up. Nice.</p>'), box => {
     box.querySelectorAll('[data-delall]').forEach(b => b.onclick = () => deleteAllFrom(list[+b.dataset.delall]));
-    box.querySelectorAll('[data-unsub]').forEach(b => b.onclick = async () => {
-      const e = list[+b.dataset.unsub]; b.textContent = '…';
-      try { const body = await call('body', {acct: e.latest.acct, folder: e.latest.folder, uid: e.latest.uid, peek: true}); b.textContent = 'Unsubscribe';
-        if (!body.unsub) { toast('No unsubscribe link in their emails. Try Delete all, or report as spam.'); return; }
-        unsubscribe(e.latest, body.unsub);
-      } catch (er) { b.textContent = 'Unsubscribe'; toast(er.message); }
-    });
+    box.querySelectorAll('[data-unsub]').forEach(b => b.onclick = () => unsubscribe(list[+b.dataset.unsub].latest, b));
   });
 }
 async function findAllFrom(senders) {

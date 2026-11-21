@@ -785,6 +785,12 @@ jobs:
           import java.io.FileInputStream;
           import java.io.FileOutputStream;
           import java.io.InputStream;
+          import java.io.OutputStream;
+          import java.net.HttpURLConnection;
+          import java.net.URL;
+          import java.net.URLDecoder;
+          import java.util.regex.Matcher;
+          import java.util.regex.Pattern;
           import java.nio.charset.StandardCharsets;
           import java.util.ArrayList;
           import java.util.HashMap;
@@ -1192,6 +1198,103 @@ jobs:
                   IMAPFolder f = folder(acct, folder);
                   Message[] found = f.search(new HeaderTerm("X-Brisk-Draft", dk));
                   if (found.length > 0) deleteForever(f, found);
+              }
+
+              /* ---------------- unsubscribe ---------------- */
+
+              private static String allHeaders(Message m, String name) throws Exception {
+                  String[] h = m.getHeader(name);
+                  if (h == null) return "";
+                  StringBuilder sb = new StringBuilder();
+                  for (String x : h) sb.append(x).append(',');
+                  return sb.toString();
+              }
+
+              /**
+               * Unsubscribes from the list that sent message m, the way Gmail does:
+               * 1. RFC 8058 one-click (HTTP POST) when the sender supports it,
+               * 2. otherwise an unsubscribe email to the list's mailto address,
+               * 3. otherwise the web link from the header or the email's footer, for the user to finish in a browser.
+               */
+              static JSONObject unsubscribe(Acct acct, Message m) throws Exception {
+                  JSONObject o = new JSONObject();
+                  String lu = allHeaders(m, "List-Unsubscribe").replaceAll("\\s+", "");
+                  boolean oneClick = allHeaders(m, "List-Unsubscribe-Post").toLowerCase().contains("one-click");
+                  String web = null, mailto = null;
+                  Matcher mw = Pattern.compile("<(https?:[^>]+)>", Pattern.CASE_INSENSITIVE).matcher(lu);
+                  if (mw.find()) web = mw.group(1);
+                  Matcher mm = Pattern.compile("<mailto:([^>]+)>", Pattern.CASE_INSENSITIVE).matcher(lu);
+                  if (mm.find()) mailto = mm.group(1);
+
+                  if (web != null && oneClick) {
+                      try {
+                          HttpURLConnection c = (HttpURLConnection) new URL(web).openConnection();
+                          c.setRequestMethod("POST");
+                          c.setConnectTimeout(15000);
+                          c.setReadTimeout(20000);
+                          c.setInstanceFollowRedirects(false);
+                          c.setDoOutput(true);
+                          c.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+                          c.setRequestProperty("User-Agent", "BriskMail/1.0 (Android)");
+                          try (OutputStream out = c.getOutputStream()) {
+                              out.write("List-Unsubscribe=One-Click".getBytes(StandardCharsets.UTF_8));
+                          }
+                          int code = c.getResponseCode();
+                          c.disconnect();
+                          if (code >= 200 && code < 400) {
+                              o.put("method", "oneclick");
+                              return o;
+                          }
+                      } catch (Exception ignored) { /* fall through to the next way */ }
+                  }
+                  if (mailto != null) {
+                      String[] parts = mailto.split("\\?", 2);
+                      String to = URLDecoder.decode(parts[0], "UTF-8"), subject = "unsubscribe", body = "unsubscribe";
+                      if (parts.length > 1) {
+                          for (String kv : parts[1].split("&")) {
+                              String[] p = kv.split("=", 2);
+                              if (p.length < 2) continue;
+                              if ("subject".equalsIgnoreCase(p[0])) subject = URLDecoder.decode(p[1], "UTF-8");
+                              if ("body".equalsIgnoreCase(p[0])) body = URLDecoder.decode(p[1], "UTF-8");
+                          }
+                      }
+                      try {
+                          JSONObject pl = new JSONObject();
+                          pl.put("to", to); pl.put("subject", subject); pl.put("body", body);
+                          send(acct, pl);
+                          o.put("method", "email");
+                          o.put("to", to);
+                          return o;
+                      } catch (Exception e) {
+                          if (web == null) throw new Exception("Couldn't send the unsubscribe email: " + e.getMessage());
+                      }
+                  }
+                  if (web == null) {
+                      // No List-Unsubscribe header: look for an unsubscribe link in the email itself.
+                      ((IMAPMessage) m).setPeek(true);
+                      Body b = new Body();
+                      walk(m, b);
+                      String html = b.html == null ? "" : b.html;
+                      Matcher a = Pattern.compile("<a\\b[^>]*href\\s*=\\s*[\"']?(https?://[^\"'\\s>]+)[^>]*>(.*?)</a>", Pattern.CASE_INSENSITIVE | Pattern.DOTALL).matcher(html);
+                      String fallback = null;
+                      while (a.find()) {
+                          String href = a.group(1).replace("&amp;", "&"), text = a.group(2).replaceAll("<[^>]+>", " ");
+                          if ((href + " " + text).toLowerCase().matches("(?s).*(unsubscri|opt[ -]?out).*")) { web = href; break; }
+                          if (fallback == null && text.toLowerCase().matches("(?s).*(manage (your )?(email )?(preferences|subscriptions?)|email preferences).*")) fallback = href;
+                      }
+                      if (web == null) web = fallback;
+                      if (web == null && b.text != null) {
+                          Matcher t = Pattern.compile("(https?://\\S*unsubscri\\S*)", Pattern.CASE_INSENSITIVE).matcher(b.text);
+                          if (t.find()) web = t.group(1);
+                      }
+                  }
+                  if (web != null) {
+                      o.put("method", "web");
+                      o.put("url", web);
+                      return o;
+                  }
+                  o.put("method", "none");
+                  return o;
               }
 
               /* ---------------- snooze ---------------- */
@@ -1863,6 +1966,26 @@ jobs:
                           o.put("woken", Mail.wake(this, acct, a.getString("mid"), true).size());
                           CheckJob.scheduleNext(this);
                           return o;
+                      }
+                      case "unsubscribe": {
+                          // Try the given email first, then other recent ones from the same sender.
+                          JSONArray cands = a.getJSONArray("cands");
+                          Exception last = null;
+                          for (int i = 0; i < cands.length(); i++) {
+                              JSONObject c = cands.getJSONObject(i);
+                              try {
+                                  if (!"INBOX".equals(c.getString("folder")) && !Mail.exists(acct, c.getString("folder"))) continue;
+                                  IMAPFolder f = Mail.folder(acct, c.getString("folder"));
+                                  javax.mail.Message m = f.getMessageByUID(c.getLong("uid"));
+                                  if (m == null) continue;
+                                  JSONObject r = Mail.unsubscribe(acct, m);
+                                  if (!"none".equals(r.optString("method")) || i == cands.length() - 1) return r;
+                              } catch (Exception e) { last = e; }
+                          }
+                          if (last != null) throw last;
+                          JSONObject r = new JSONObject();
+                          r.put("method", "none");
+                          return r;
                       }
                       case "saveDraft":
                           Mail.saveDraft(acct, a);
