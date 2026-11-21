@@ -112,7 +112,7 @@ jobs:
           }
 
           dependencies {
-              // JavaMail for Android: IMAP (reading/searching Gmail) and SMTP (sending)
+              // JavaMail for Android: IMAP (reading/searching) and SMTP (sending)
               implementation 'com.sun.mail:android-mail:1.6.7'
               implementation 'com.sun.mail:android-activation:1.6.7'
           }
@@ -124,6 +124,9 @@ jobs:
 
               <uses-permission android:name="android.permission.INTERNET" />
               <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+              <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+              <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+              <uses-permission android:name="android.permission.USE_BIOMETRIC" />
 
               <application
                   android:label="Brisk"
@@ -143,6 +146,27 @@ jobs:
                           <category android:name="android.intent.category.LAUNCHER" />
                       </intent-filter>
                   </activity>
+
+                  <service
+                      android:name=".CheckJob"
+                      android:permission="android.permission.BIND_JOB_SERVICE"
+                      android:exported="false" />
+
+                  <receiver
+                      android:name=".NotifyAction"
+                      android:exported="false" />
+
+                  <receiver
+                      android:name=".BriskWidget"
+                      android:label="Brisk inbox"
+                      android:exported="true">
+                      <intent-filter>
+                          <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                      </intent-filter>
+                      <meta-data
+                          android:name="android.appwidget.provider"
+                          android:resource="@xml/brisk_widget_info" />
+                  </receiver>
               </application>
           </manifest>
           BRISK_EOF
@@ -192,6 +216,86 @@ jobs:
               <path android:fillColor="#FF5C8A" android:pathData="M55,76h10v4h-10z"/>
           </vector>
           BRISK_EOF
+          mkdir -p android/app/src/main/res/drawable
+          cat > android/app/src/main/res/drawable/ic_stat_mail.xml <<'BRISK_EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <vector xmlns:android="http://schemas.android.com/apk/res/android"
+              android:width="24dp" android:height="24dp"
+              android:viewportWidth="24" android:viewportHeight="24">
+              <path android:fillColor="#FFFFFFFF" android:pathData="M3,5h18a1,1 0 0,1 1,1v12a1,1 0 0,1 -1,1h-18a1,1 0 0,1 -1,-1v-12a1,1 0 0,1 1,-1zM4,7.2v10.3h16v-10.3l-8,5.6z"/>
+          </vector>
+          BRISK_EOF
+          mkdir -p android/app/src/main/res/drawable
+          cat > android/app/src/main/res/drawable/widget_bg.xml <<'BRISK_EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+              <solid android:color="#F20A2540" />
+              <corners android:radius="22dp" />
+          </shape>
+          BRISK_EOF
+          mkdir -p android/app/src/main/res/drawable
+          cat > android/app/src/main/res/drawable/widget_btn.xml <<'BRISK_EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+              <solid android:color="#FF5C8A" />
+              <corners android:radius="14dp" />
+          </shape>
+          BRISK_EOF
+          mkdir -p android/app/src/main/res/xml
+          cat > android/app/src/main/res/xml/brisk_widget_info.xml <<'BRISK_EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+              android:minWidth="250dp"
+              android:minHeight="110dp"
+              android:targetCellWidth="4"
+              android:targetCellHeight="2"
+              android:updatePeriodMillis="0"
+              android:initialLayout="@layout/brisk_widget"
+              android:resizeMode="horizontal|vertical"
+              android:widgetCategory="home_screen"
+              android:description="@string/widget_desc" />
+          BRISK_EOF
+          mkdir -p android/app/src/main/res/values
+          cat > android/app/src/main/res/values/strings.xml <<'BRISK_EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <resources>
+              <string name="widget_desc">Unread count and your latest emails</string>
+          </resources>
+          BRISK_EOF
+          mkdir -p android/app/src/main/res/layout
+          cat > android/app/src/main/res/layout/brisk_widget.xml <<'BRISK_EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:id="@+id/w_root"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent"
+              android:orientation="vertical"
+              android:padding="14dp"
+              android:background="@drawable/widget_bg">
+              <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical">
+                  <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Brisk" android:textColor="#FFFFFF" android:textSize="18sp" />
+                  <TextView android:id="@+id/w_count" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:paddingStart="10dp" android:textColor="#8FD3FF" android:textSize="13sp" android:textStyle="bold" />
+                  <TextView android:id="@+id/w_compose" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Write" android:textColor="#FFFFFF" android:textSize="13sp" android:textStyle="bold" android:background="@drawable/widget_btn" android:paddingStart="12dp" android:paddingEnd="12dp" android:paddingTop="5dp" android:paddingBottom="5dp" />
+              </LinearLayout>
+              <TextView android:id="@+id/w_empty" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingTop="10dp" android:text="Open Brisk to load your inbox" android:textColor="#A9C0D8" android:textSize="13sp" />
+                  <LinearLayout android:id="@+id/w_r1" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:paddingTop="6dp">
+                      <TextView android:id="@+id/w_f1" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="#FFFFFF" android:textSize="13sp" android:textStyle="bold" android:maxLines="1" android:ellipsize="end" />
+                      <TextView android:id="@+id/w_s1" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="#A9C0D8" android:textSize="12sp" android:maxLines="1" android:ellipsize="end" />
+                  </LinearLayout>
+                  <LinearLayout android:id="@+id/w_r2" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:paddingTop="6dp">
+                      <TextView android:id="@+id/w_f2" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="#FFFFFF" android:textSize="13sp" android:textStyle="bold" android:maxLines="1" android:ellipsize="end" />
+                      <TextView android:id="@+id/w_s2" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="#A9C0D8" android:textSize="12sp" android:maxLines="1" android:ellipsize="end" />
+                  </LinearLayout>
+                  <LinearLayout android:id="@+id/w_r3" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:paddingTop="6dp">
+                      <TextView android:id="@+id/w_f3" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="#FFFFFF" android:textSize="13sp" android:textStyle="bold" android:maxLines="1" android:ellipsize="end" />
+                      <TextView android:id="@+id/w_s3" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="#A9C0D8" android:textSize="12sp" android:maxLines="1" android:ellipsize="end" />
+                  </LinearLayout>
+                  <LinearLayout android:id="@+id/w_r4" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:paddingTop="6dp">
+                      <TextView android:id="@+id/w_f4" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="#FFFFFF" android:textSize="13sp" android:textStyle="bold" android:maxLines="1" android:ellipsize="end" />
+                      <TextView android:id="@+id/w_s4" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="#A9C0D8" android:textSize="12sp" android:maxLines="1" android:ellipsize="end" />
+                  </LinearLayout>
+          </LinearLayout>
+          BRISK_EOF
           mkdir -p android/app/src/main/res/mipmap-anydpi
           cat > android/app/src/main/res/mipmap-anydpi/ic_launcher.xml <<'BRISK_EOF'
           <?xml version="1.0" encoding="utf-8"?>
@@ -209,25 +313,1017 @@ jobs:
           </adaptive-icon>
           BRISK_EOF
           mkdir -p android/app/src/main/java/com/daveg27/brisk
+          cat > android/app/src/main/java/com/daveg27/brisk/Acct.java <<'BRISK_EOF'
+          package com.daveg27.brisk;
+
+          import android.content.Context;
+          import android.content.SharedPreferences;
+          import android.security.keystore.KeyGenParameterSpec;
+          import android.security.keystore.KeyProperties;
+          import android.util.Base64;
+
+          import org.json.JSONArray;
+          import org.json.JSONObject;
+
+          import java.nio.charset.StandardCharsets;
+          import java.security.KeyStore;
+          import java.util.ArrayList;
+          import java.util.Collection;
+          import java.util.HashMap;
+          import java.util.List;
+          import java.util.Map;
+          import java.util.UUID;
+
+          import javax.crypto.Cipher;
+          import javax.crypto.KeyGenerator;
+          import javax.crypto.SecretKey;
+          import javax.crypto.spec.GCMParameterSpec;
+
+          import com.sun.mail.imap.IMAPFolder;
+          import com.sun.mail.imap.IMAPStore;
+
+          /** One mail account, its saved settings and (while in use) its live IMAP connection. */
+          class Acct {
+              String id, email, user, provider, imapHost, smtpHost, smtpSec, pw;
+              int imapPort, smtpPort;
+              IMAPStore store;
+              final Map<String, IMAPFolder> open = new HashMap<>();
+
+              boolean gmail() { return "imap.gmail.com".equalsIgnoreCase(imapHost); }
+
+              JSONObject pub() throws Exception {
+                  JSONObject o = new JSONObject();
+                  o.put("id", id); o.put("email", email); o.put("provider", provider); o.put("gmail", gmail());
+                  return o;
+              }
+
+              /* ---------- storage ---------- */
+
+              static SharedPreferences prefs(Context c) {
+                  return c.getSharedPreferences("brisk", Context.MODE_PRIVATE);
+              }
+
+              static JSONArray arr(Context c, String k) {
+                  try { return new JSONArray(prefs(c).getString(k, "[]")); } catch (Exception e) { return new JSONArray(); }
+              }
+
+              static JSONObject obj(Context c, String k) {
+                  try { return new JSONObject(prefs(c).getString(k, "{}")); } catch (Exception e) { return new JSONObject(); }
+              }
+
+              static synchronized void put(Context c, String k, Object v) {
+                  prefs(c).edit().putString(k, v.toString()).apply();
+              }
+
+              private static SecretKey key() throws Exception {
+                  KeyStore ks = KeyStore.getInstance("AndroidKeyStore");
+                  ks.load(null);
+                  if (!ks.containsAlias("brisk")) {
+                      KeyGenerator kg = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore");
+                      kg.init(new KeyGenParameterSpec.Builder("brisk",
+                              KeyProperties.PURPOSE_ENCRYPT | KeyProperties.PURPOSE_DECRYPT)
+                              .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
+                              .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
+                              .build());
+                      kg.generateKey();
+                  }
+                  return (SecretKey) ks.getKey("brisk", null);
+              }
+
+              static String enc(String plain) throws Exception {
+                  Cipher c = Cipher.getInstance("AES/GCM/NoPadding");
+                  c.init(Cipher.ENCRYPT_MODE, key());
+                  byte[] ct = c.doFinal(plain.getBytes(StandardCharsets.UTF_8));
+                  return Base64.encodeToString(c.getIV(), Base64.NO_WRAP) + ":" + Base64.encodeToString(ct, Base64.NO_WRAP);
+              }
+
+              static String dec(String blob) throws Exception {
+                  String[] parts = blob.split(":");
+                  Cipher c = Cipher.getInstance("AES/GCM/NoPadding");
+                  c.init(Cipher.DECRYPT_MODE, key(), new GCMParameterSpec(128, Base64.decode(parts[0], Base64.NO_WRAP)));
+                  return new String(c.doFinal(Base64.decode(parts[1], Base64.NO_WRAP)), StandardCharsets.UTF_8);
+              }
+
+              static synchronized void saveAll(Context ctx, Collection<Acct> list) throws Exception {
+                  JSONArray arr = new JSONArray();
+                  SharedPreferences.Editor ed = prefs(ctx).edit();
+                  for (Acct a : list) {
+                      JSONObject o = new JSONObject();
+                      o.put("id", a.id); o.put("email", a.email); o.put("user", a.user); o.put("provider", a.provider);
+                      o.put("imapHost", a.imapHost); o.put("imapPort", a.imapPort);
+                      o.put("smtpHost", a.smtpHost); o.put("smtpPort", a.smtpPort); o.put("smtpSec", a.smtpSec);
+                      arr.put(o);
+                      ed.putString("pw_" + a.id, enc(a.pw));
+                  }
+                  ed.putString("accounts", arr.toString()).apply();
+              }
+
+              static synchronized List<Acct> loadAll(Context ctx) {
+                  List<Acct> out = new ArrayList<>();
+                  SharedPreferences p = prefs(ctx);
+                  try {
+                      String old = p.getString("email", null), oldPw = p.getString("pw", null);
+                      if (old != null && oldPw != null && p.getString("accounts", null) == null) {
+                          // Version 1 stored a single Gmail account: move it into the account list.
+                          Acct a = gmail(old, dec(oldPw));
+                          out.add(a);
+                          saveAll(ctx, out);
+                          p.edit().remove("email").remove("pw").apply();
+                          return out;
+                      }
+                      JSONArray arr = new JSONArray(p.getString("accounts", "[]"));
+                      for (int i = 0; i < arr.length(); i++) {
+                          JSONObject o = arr.getJSONObject(i);
+                          Acct a = new Acct();
+                          a.id = o.getString("id"); a.email = o.getString("email"); a.user = o.optString("user", a.email);
+                          a.provider = o.optString("provider", "other");
+                          a.imapHost = o.getString("imapHost"); a.imapPort = o.optInt("imapPort", 993);
+                          a.smtpHost = o.getString("smtpHost"); a.smtpPort = o.optInt("smtpPort", 465);
+                          a.smtpSec = o.optString("smtpSec", "ssl");
+                          String blob = p.getString("pw_" + a.id, null);
+                          if (blob == null) continue;
+                          try { a.pw = dec(blob); } catch (Exception e) { continue; }
+                          out.add(a);
+                      }
+                  } catch (Exception ignored) { }
+                  return out;
+              }
+
+              static Acct gmail(String email, String pw) {
+                  Acct a = new Acct();
+                  a.id = UUID.randomUUID().toString().substring(0, 8);
+                  a.email = email; a.user = email; a.pw = pw; a.provider = "gmail";
+                  a.imapHost = "imap.gmail.com"; a.imapPort = 993;
+                  a.smtpHost = "smtp.gmail.com"; a.smtpPort = 465; a.smtpSec = "ssl";
+                  return a;
+              }
+          }
+          BRISK_EOF
+          mkdir -p android/app/src/main/java/com/daveg27/brisk
+          cat > android/app/src/main/java/com/daveg27/brisk/BriskWidget.java <<'BRISK_EOF'
+          package com.daveg27.brisk;
+
+          import android.app.PendingIntent;
+          import android.appwidget.AppWidgetManager;
+          import android.appwidget.AppWidgetProvider;
+          import android.content.ComponentName;
+          import android.content.Context;
+          import android.content.Intent;
+          import android.view.View;
+          import android.widget.RemoteViews;
+
+          import org.json.JSONArray;
+          import org.json.JSONObject;
+
+          /** Home-screen widget: unread count plus the latest emails across all accounts. */
+          public class BriskWidget extends AppWidgetProvider {
+
+              private static final int[] FROM = {R.id.w_f1, R.id.w_f2, R.id.w_f3, R.id.w_f4};
+              private static final int[] SUBJ = {R.id.w_s1, R.id.w_s2, R.id.w_s3, R.id.w_s4};
+              private static final int[] ROW = {R.id.w_r1, R.id.w_r2, R.id.w_r3, R.id.w_r4};
+
+              @Override
+              public void onUpdate(Context c, AppWidgetManager m, int[] ids) {
+                  for (int id : ids) render(c, m, id);
+                  CheckJob.schedule(c);
+              }
+
+              static void updateAll(Context c) {
+                  AppWidgetManager m = AppWidgetManager.getInstance(c);
+                  for (int id : m.getAppWidgetIds(new ComponentName(c, BriskWidget.class))) render(c, m, id);
+              }
+
+              static void render(Context c, AppWidgetManager m, int id) {
+                  RemoteViews v = new RemoteViews(c.getPackageName(), R.layout.brisk_widget);
+                  Intent open = new Intent(c, MainActivity.class).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                  v.setOnClickPendingIntent(R.id.w_root, PendingIntent.getActivity(c, 0, open,
+                          PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT));
+                  Intent compose = new Intent(c, MainActivity.class).putExtra("compose", true)
+                          .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                  v.setOnClickPendingIntent(R.id.w_compose, PendingIntent.getActivity(c, 1, compose,
+                          PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT));
+                  JSONObject d = Acct.obj(c, "widget");
+                  int unread = d.optInt("unread", 0);
+                  v.setTextViewText(R.id.w_count, unread == 0 ? "All read" : unread + " unread");
+                  JSONArray items = d.optJSONArray("items");
+                  int n = items == null ? 0 : items.length();
+                  for (int i = 0; i < FROM.length; i++) {
+                      if (i < n) {
+                          JSONObject x = items.optJSONObject(i);
+                          v.setViewVisibility(ROW[i], View.VISIBLE);
+                          v.setTextViewText(FROM[i], (x.optBoolean("seen") ? "" : "● ") + x.optString("from"));
+                          v.setTextViewText(SUBJ[i], x.optString("subj"));
+                      } else {
+                          v.setViewVisibility(ROW[i], View.GONE);
+                      }
+                  }
+                  v.setViewVisibility(R.id.w_empty, n == 0 ? View.VISIBLE : View.GONE);
+                  m.updateAppWidget(id, v);
+              }
+          }
+          BRISK_EOF
+          mkdir -p android/app/src/main/java/com/daveg27/brisk
+          cat > android/app/src/main/java/com/daveg27/brisk/CheckJob.java <<'BRISK_EOF'
+          package com.daveg27.brisk;
+
+          import android.app.Notification;
+          import android.app.NotificationChannel;
+          import android.app.NotificationManager;
+          import android.app.PendingIntent;
+          import android.app.job.JobInfo;
+          import android.app.job.JobParameters;
+          import android.app.job.JobScheduler;
+          import android.app.job.JobService;
+          import android.content.ComponentName;
+          import android.content.Context;
+          import android.content.Intent;
+          import android.graphics.drawable.Icon;
+
+          import org.json.JSONArray;
+          import org.json.JSONObject;
+
+          import java.util.ArrayList;
+          import java.util.List;
+
+          import javax.mail.Address;
+          import javax.mail.Flags;
+          import javax.mail.Message;
+          import javax.mail.UIDFolder;
+          import javax.mail.internet.InternetAddress;
+
+          import com.sun.mail.imap.IMAPFolder;
+
+          /**
+           * Runs about every 15 minutes (and at snooze / send-later times): sends scheduled
+           * emails, brings snoozed emails back, posts new-mail notifications and refreshes the widget.
+           */
+          public class CheckJob extends JobService {
+
+              static final int PERIODIC = 7101, ONCE = 7102;
+              static final String CHANNEL = "mail";
+
+              static void schedule(Context c) {
+                  JobScheduler js = c.getSystemService(JobScheduler.class);
+                  if (js == null) return;
+                  if (js.getPendingJob(PERIODIC) == null) {
+                      js.schedule(new JobInfo.Builder(PERIODIC, new ComponentName(c, CheckJob.class))
+                              .setPeriodic(15 * 60 * 1000L)
+                              .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
+                              .setPersisted(true)
+                              .build());
+                  }
+                  scheduleNext(c);
+              }
+
+              /** One-off run at the next snooze / scheduled-send time. */
+              static void scheduleNext(Context c) {
+                  JobScheduler js = c.getSystemService(JobScheduler.class);
+                  if (js == null) return;
+                  long due = Mail.nextDue(c);
+                  if (due == 0) { js.cancel(ONCE); return; }
+                  long delay = Math.max(0, due - System.currentTimeMillis());
+                  js.schedule(new JobInfo.Builder(ONCE, new ComponentName(c, CheckJob.class))
+                          .setMinimumLatency(delay)
+                          .setOverrideDeadline(delay + 5 * 60 * 1000L)
+                          .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
+                          .setPersisted(true)
+                          .build());
+              }
+
+              @Override
+              public boolean onStartJob(JobParameters params) {
+                  final Context c = getApplicationContext();
+                  new Thread(() -> {
+                      try { work(c); } catch (Exception ignored) { }
+                      finally {
+                          scheduleNext(c);
+                          jobFinished(params, false);
+                      }
+                  }).start();
+                  return true;
+              }
+
+              @Override
+              public boolean onStopJob(JobParameters params) {
+                  return true;
+              }
+
+              static synchronized void work(Context c) {
+                  List<Acct> accounts = Acct.loadAll(c);
+                  JSONObject cfg = Acct.obj(c, "notify");
+                  boolean notifyOn = cfg.optBoolean("enabled", true), vipOnly = cfg.optBoolean("vipOnly", false);
+                  List<String> vips = new ArrayList<>();
+                  JSONArray va = cfg.optJSONArray("vips");
+                  if (va != null) for (int i = 0; i < va.length(); i++) vips.add(va.optString(i).toLowerCase());
+                  long now = System.currentTimeMillis();
+
+                  // 1. Scheduled sends that are due
+                  JSONArray sched = Acct.arr(c, "scheduled");
+                  for (int i = 0; i < sched.length(); i++) {
+                      JSONObject e = sched.optJSONObject(i);
+                      if (e == null || e.optLong("at") > now) continue;
+                      Acct a = find(accounts, e.optString("acct"));
+                      String id = e.optString("id");
+                      try {
+                          if (a == null) throw new Exception("account removed");
+                          Mail.send(a, Mail.payload(c, id));
+                          Mail.unschedule(c, id);
+                      } catch (Exception ex) {
+                          int tries = e.optInt("tries", 0) + 1;
+                          if (tries >= 5 || a == null) {
+                              Mail.unschedule(c, id);
+                              post(c, ("sendfail" + id).hashCode(), "Scheduled email not sent", "“" + e.optString("subject") + "” couldn’t be sent: " + ex.getMessage(), null, null, 0);
+                          } else {
+                              try {
+                                  JSONArray l = Acct.arr(c, "scheduled");
+                                  for (int j = 0; j < l.length(); j++) {
+                                      JSONObject x = l.getJSONObject(j);
+                                      if (id.equals(x.optString("id"))) { x.put("tries", tries); x.put("at", now + 10 * 60 * 1000L); }
+                                  }
+                                  Acct.put(c, "scheduled", l);
+                              } catch (Exception ignored) { }
+                          }
+                      }
+                  }
+
+                  JSONArray widgetItems = new JSONArray();
+                  int unreadTotal = 0;
+                  for (Acct a : accounts) {
+                      try {
+                          // 2. Snoozed emails that are due
+                          for (JSONObject w : Mail.wake(c, a, null, false)) {
+                              if (notifyOn) post(c, ("snz" + w.optString("mid")).hashCode(), "Back from snooze: " + w.optString("from"), w.optString("subj"), a, null, 0);
+                          }
+                          // 3. New mail
+                          IMAPFolder inbox = Mail.folder(a, "INBOX");
+                          long validity = inbox.getUIDValidity(), next = inbox.getUIDNext();
+                          String kLast = "lastUid_" + a.id, kVal = "uidv_" + a.id;
+                          long last = Acct.prefs(c).getLong(kLast, -1), oldVal = Acct.prefs(c).getLong(kVal, -1);
+                          if (last < 0 || oldVal != validity) {
+                              last = next - 1; // first run: start from now, don't notify old mail
+                          } else if (next - 1 > last && notifyOn) {
+                              Message[] ms = Mail.nonNull(inbox.getMessagesByUID(last + 1, UIDFolder.LASTUID));
+                              inbox.fetch(ms, Mail.listProfile());
+                              int shown = 0;
+                              for (int i = ms.length - 1; i >= 0 && shown < 8; i--) {
+                                  Message m = ms[i];
+                                  long uid = inbox.getUID(m);
+                                  if (uid <= last || m.isSet(Flags.Flag.SEEN)) continue;
+                                  Address[] fr = m.getFrom();
+                                  InternetAddress ia = fr != null && fr.length > 0 && fr[0] instanceof InternetAddress ? (InternetAddress) fr[0] : null;
+                                  String email = ia == null || ia.getAddress() == null ? "" : ia.getAddress().toLowerCase();
+                                  if (vipOnly && !vips.contains(email)) continue;
+                                  String from = ia == null ? "New email" : (ia.getPersonal() != null ? ia.getPersonal() : ia.getAddress());
+                                  String subj = m.getSubject() == null ? "(no subject)" : m.getSubject();
+                                  String snip = Mail.snippet(m);
+                                  post(c, (a.id + uid).hashCode(), (vips.contains(email) ? "★ " : "") + from, subj + (snip.isEmpty() ? "" : "\n" + snip), a, "INBOX", uid);
+                                  shown++;
+                              }
+                          }
+                          Acct.prefs(c).edit().putLong(kLast, Math.max(last, next - 1)).putLong(kVal, validity).apply();
+                          // 4. Widget data
+                          unreadTotal += Math.max(0, inbox.getUnreadMessageCount());
+                          int total = inbox.getMessageCount();
+                          if (total > 0) {
+                              Message[] recent = inbox.getMessages(Math.max(1, total - 3), total);
+                              inbox.fetch(recent, Mail.listProfile());
+                              for (Message m : recent) {
+                                  JSONObject o = Mail.summary(a, inbox, m);
+                                  widgetItems.put(o);
+                              }
+                          }
+                      } catch (Exception ignored) {
+                      } finally {
+                          Mail.closeAll(a);
+                      }
+                  }
+                  try {
+                      List<JSONObject> list = new ArrayList<>();
+                      for (int i = 0; i < widgetItems.length(); i++) list.add(widgetItems.getJSONObject(i));
+                      list.sort((x, y) -> Long.compare(y.optLong("t"), x.optLong("t")));
+                      JSONArray top = new JSONArray();
+                      for (int i = 0; i < Math.min(4, list.size()); i++) {
+                          JSONObject x = list.get(i), w = new JSONObject();
+                          w.put("from", x.optString("from")); w.put("subj", x.optString("subj")); w.put("seen", x.optBoolean("seen"));
+                          top.put(w);
+                      }
+                      if (!accounts.isEmpty()) {
+                          JSONObject wd = new JSONObject();
+                          wd.put("unread", unreadTotal); wd.put("items", top); wd.put("t", now);
+                          Acct.put(c, "widget", wd);
+                          BriskWidget.updateAll(c);
+                      }
+                  } catch (Exception ignored) { }
+              }
+
+              static Acct find(List<Acct> l, String id) {
+                  for (Acct a : l) if (a.id.equals(id)) return a;
+                  return null;
+              }
+
+              static void channel(Context c) {
+                  NotificationManager nm = c.getSystemService(NotificationManager.class);
+                  if (nm != null && nm.getNotificationChannel(CHANNEL) == null) {
+                      NotificationChannel ch = new NotificationChannel(CHANNEL, "New email", NotificationManager.IMPORTANCE_DEFAULT);
+                      ch.setDescription("New emails, snoozed emails coming back, and send-later problems");
+                      nm.createNotificationChannel(ch);
+                  }
+              }
+
+              static PendingIntent action(Context c, int nid, Acct a, String folder, long uid, String op) {
+                  Intent i = new Intent(c, NotifyAction.class)
+                          .putExtra("acct", a.id).putExtra("folder", folder).putExtra("uid", uid)
+                          .putExtra("op", op).putExtra("nid", nid);
+                  return PendingIntent.getBroadcast(c, (nid + op).hashCode(), i, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
+              }
+
+              static void post(Context c, int nid, String title, String text, Acct a, String folder, long uid) {
+                  channel(c);
+                  NotificationManager nm = c.getSystemService(NotificationManager.class);
+                  if (nm == null) return;
+                  Intent open = new Intent(c, MainActivity.class).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                  if (a != null && folder != null) {
+                      open.putExtra("open", "{\"acct\":\"" + a.id + "\",\"folder\":" + JSONObject.quote(folder) + ",\"uid\":" + uid + "}");
+                  }
+                  PendingIntent pi = PendingIntent.getActivity(c, nid, open, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
+                  String first = text.contains("\n") ? text.substring(0, text.indexOf('\n')) : text;
+                  Notification.Builder b = new Notification.Builder(c, CHANNEL)
+                          .setSmallIcon(R.drawable.ic_stat_mail)
+                          .setColor(0xFFFF5C8A)
+                          .setContentTitle(title)
+                          .setContentText(first)
+                          .setStyle(new Notification.BigTextStyle().bigText(text))
+                          .setContentIntent(pi)
+                          .setAutoCancel(true)
+                          .setWhen(System.currentTimeMillis())
+                          .setShowWhen(true);
+                  if (a != null) {
+                      b.setSubText(a.email).setGroup("brisk_" + a.id);
+                      if (folder != null) {
+                          Icon ic = Icon.createWithResource(c, R.drawable.ic_stat_mail);
+                          b.addAction(new Notification.Action.Builder(ic, "Archive", action(c, nid, a, folder, uid, "archive")).build());
+                          b.addAction(new Notification.Action.Builder(ic, "Delete", action(c, nid, a, folder, uid, "trash")).build());
+                          b.addAction(new Notification.Action.Builder(ic, "Mark read", action(c, nid, a, folder, uid, "read")).build());
+                      }
+                  }
+                  try { nm.notify(nid, b.build()); } catch (SecurityException ignored) { }
+              }
+          }
+          BRISK_EOF
+          mkdir -p android/app/src/main/java/com/daveg27/brisk
+          cat > android/app/src/main/java/com/daveg27/brisk/Mail.java <<'BRISK_EOF'
+          package com.daveg27.brisk;
+
+          import android.content.Context;
+          import android.util.Base64;
+
+          import org.json.JSONArray;
+          import org.json.JSONObject;
+
+          import java.io.ByteArrayOutputStream;
+          import java.io.File;
+          import java.io.FileInputStream;
+          import java.io.FileOutputStream;
+          import java.io.InputStream;
+          import java.nio.charset.StandardCharsets;
+          import java.util.ArrayList;
+          import java.util.HashMap;
+          import java.util.List;
+          import java.util.Map;
+          import java.util.Properties;
+          import java.util.UUID;
+
+          import javax.activation.DataHandler;
+          import javax.mail.Address;
+          import javax.mail.FetchProfile;
+          import javax.mail.Flags;
+          import javax.mail.Folder;
+          import javax.mail.Message;
+          import javax.mail.Multipart;
+          import javax.mail.Part;
+          import javax.mail.Session;
+          import javax.mail.Transport;
+          import javax.mail.UIDFolder;
+          import javax.mail.internet.InternetAddress;
+          import javax.mail.internet.MimeBodyPart;
+          import javax.mail.internet.MimeMessage;
+          import javax.mail.internet.MimeMultipart;
+          import javax.mail.search.HeaderTerm;
+          import javax.mail.util.ByteArrayDataSource;
+
+          import com.sun.mail.imap.IMAPFolder;
+          import com.sun.mail.imap.IMAPMessage;
+          import com.sun.mail.imap.IMAPStore;
+
+          /** IMAP/SMTP helpers shared by the app, the background job and notification buttons. */
+          final class Mail {
+              private Mail() { }
+
+              static final String SNOOZE_FOLDER = "Brisk Snoozed";
+
+              /* ---------------- connections ---------------- */
+
+              static IMAPStore connect(Acct a) throws Exception {
+                  Properties pr = new Properties();
+                  pr.put("mail.store.protocol", "imaps");
+                  pr.put("mail.imaps.host", a.imapHost);
+                  pr.put("mail.imaps.port", String.valueOf(a.imapPort));
+                  pr.put("mail.imaps.connectiontimeout", "15000");
+                  pr.put("mail.imaps.timeout", "30000");
+                  pr.put("mail.imaps.partialfetch", "false");
+                  Session s = Session.getInstance(pr);
+                  IMAPStore st = (IMAPStore) s.getStore("imaps");
+                  st.connect(a.imapHost, a.imapPort, a.user, a.pw);
+                  return st;
+              }
+
+              static IMAPStore store(Acct a) throws Exception {
+                  if (a.store != null && a.store.isConnected()) return a.store;
+                  closeAll(a);
+                  a.store = connect(a);
+                  return a.store;
+              }
+
+              static IMAPFolder folder(Acct a, String path) throws Exception {
+                  IMAPFolder f = a.open.get(path);
+                  if (f != null && f.isOpen()) return f;
+                  f = (IMAPFolder) store(a).getFolder(path);
+                  f.open(Folder.READ_WRITE);
+                  a.open.put(path, f);
+                  return f;
+              }
+
+              static boolean exists(Acct a, String path) throws Exception {
+                  return store(a).getFolder(path).exists();
+              }
+
+              static void closeAll(Acct a) {
+                  for (IMAPFolder f : a.open.values()) {
+                      try { if (f.isOpen()) f.close(false); } catch (Exception ignored) { }
+                  }
+                  a.open.clear();
+                  try { if (a.store != null) a.store.close(); } catch (Exception ignored) { }
+                  a.store = null;
+              }
+
+              /* ---------------- messages ---------------- */
+
+              static String addrs(Address[] a) {
+                  if (a == null) return "";
+                  StringBuilder sb = new StringBuilder();
+                  for (Address x : a) {
+                      if (sb.length() > 0) sb.append(", ");
+                      sb.append(x instanceof InternetAddress ? ((InternetAddress) x).toUnicodeString() : x.toString());
+                  }
+                  return sb.toString();
+              }
+
+              static JSONObject summary(Acct acct, IMAPFolder f, Message m) throws Exception {
+                  JSONObject o = new JSONObject();
+                  o.put("acct", acct.id);
+                  o.put("uid", f.getUID(m));
+                  o.put("folder", f.getFullName());
+                  Address[] fr = m.getFrom();
+                  InternetAddress a = fr != null && fr.length > 0 && fr[0] instanceof InternetAddress ? (InternetAddress) fr[0] : null;
+                  String name = a == null ? "(unknown)" : (a.getPersonal() != null && !a.getPersonal().trim().isEmpty() ? a.getPersonal() : a.getAddress());
+                  o.put("from", name);
+                  o.put("email", a == null || a.getAddress() == null ? "" : a.getAddress());
+                  o.put("to", addrs(m.getRecipients(Message.RecipientType.TO)));
+                  String subj = m.getSubject();
+                  o.put("subj", subj == null || subj.trim().isEmpty() ? "(no subject)" : subj);
+                  java.util.Date d = m.getReceivedDate();
+                  if (d == null) d = m.getSentDate();
+                  o.put("t", d == null ? 0 : d.getTime());
+                  o.put("seen", m.isSet(Flags.Flag.SEEN));
+                  o.put("star", m.isSet(Flags.Flag.FLAGGED));
+                  String ct = m.getContentType();
+                  o.put("att", ct != null && ct.toLowerCase().startsWith("multipart/mixed"));
+                  String mid = m instanceof MimeMessage ? ((MimeMessage) m).getMessageID() : null;
+                  o.put("mid", mid == null ? "" : mid);
+                  return o;
+              }
+
+              static FetchProfile listProfile() {
+                  FetchProfile fp = new FetchProfile();
+                  fp.add(FetchProfile.Item.ENVELOPE);
+                  fp.add(FetchProfile.Item.FLAGS);
+                  fp.add(FetchProfile.Item.CONTENT_INFO);
+                  fp.add(UIDFolder.FetchProfileItem.UID);
+                  return fp;
+              }
+
+              static Message[] nonNull(Message[] ms) {
+                  List<Message> ok = new ArrayList<>();
+                  for (Message m : ms) if (m != null) ok.add(m);
+                  return ok.toArray(new Message[0]);
+              }
+
+              static JSONArray summaries(Acct a, IMAPFolder f, Message[] ms) throws Exception {
+                  Message[] arr = nonNull(ms);
+                  f.fetch(arr, listProfile());
+                  JSONArray items = new JSONArray();
+                  for (int i = arr.length - 1; i >= 0; i--) {
+                      try { items.put(summary(a, f, arr[i])); } catch (Exception ignored) { }
+                  }
+                  return items;
+              }
+
+              static class Body {
+                  String text, html;
+                  final List<Part> atts = new ArrayList<>();
+              }
+
+              static String str(Object c) throws Exception {
+                  if (c instanceof String) return (String) c;
+                  if (c instanceof InputStream) return new String(readAll((InputStream) c), StandardCharsets.UTF_8);
+                  return c == null ? "" : c.toString();
+              }
+
+              static byte[] readAll(InputStream in) throws Exception {
+                  ByteArrayOutputStream bo = new ByteArrayOutputStream();
+                  byte[] buf = new byte[16384];
+                  int n;
+                  while ((n = in.read(buf)) > 0) bo.write(buf, 0, n);
+                  in.close();
+                  return bo.toByteArray();
+              }
+
+              static void walk(Part p, Body b) throws Exception {
+                  String disp = p.getDisposition(), fn = null;
+                  try { fn = p.getFileName(); } catch (Exception ignored) { }
+                  if (p.isMimeType("multipart/*")) {
+                      Multipart mp = (Multipart) p.getContent();
+                      for (int i = 0; i < mp.getCount(); i++) walk(mp.getBodyPart(i), b);
+                  } else if (p.isMimeType("message/rfc822")) {
+                      Object c = p.getContent();
+                      if (c instanceof Part) walk((Part) c, b);
+                  } else if (Part.ATTACHMENT.equalsIgnoreCase(disp) || (fn != null && !p.isMimeType("text/*"))) {
+                      b.atts.add(p);
+                  } else if (p.isMimeType("text/plain")) {
+                      if (b.text == null) b.text = str(p.getContent());
+                  } else if (p.isMimeType("text/html")) {
+                      if (b.html == null) b.html = str(p.getContent());
+                  } else if (fn != null) {
+                      b.atts.add(p);
+                  }
+              }
+
+              static String plain(Body b) {
+                  if (b.text != null && !b.text.trim().isEmpty()) return b.text;
+                  if (b.html == null) return "";
+                  String h = b.html.replaceAll("(?is)<(style|script|head)[^>]*>.*?</\\1>", " ")
+                          .replaceAll("(?i)<br\\s*/?>|</p>|</div>|</tr>|</h[1-6]>", "\n")
+                          .replaceAll("<[^>]+>", " ")
+                          .replace("&nbsp;", " ").replace("&amp;", "&").replace("&lt;", "<")
+                          .replace("&gt;", ">").replace("&quot;", "\"").replace("&#39;", "'").replace("&pound;", "£");
+                  return h.replaceAll("[ \\t\\x0B\\f\\r]+", " ").replaceAll("\\n\\s*\\n+", "\n\n").trim();
+              }
+
+              static String snippet(Message m) {
+                  try {
+                      ((IMAPMessage) m).setPeek(true);
+                      Body b = new Body();
+                      walk(m, b);
+                      String t = plain(b).replaceAll("\\s+", " ").trim();
+                      return t.length() > 600 ? t.substring(0, 600) : t;
+                  } catch (Exception e) {
+                      return "";
+                  }
+              }
+
+              static String header(Message m, String name) throws Exception {
+                  String[] h = m.getHeader(name);
+                  return h == null || h.length == 0 ? "" : h[0];
+              }
+
+              static Message byUid(IMAPFolder f, long uid) throws Exception {
+                  Message m = f.getMessageByUID(uid);
+                  if (m == null) throw new Exception("That email no longer exists");
+                  return m;
+              }
+
+              static long[] longs(JSONArray a) throws Exception {
+                  long[] u = new long[a.length()];
+                  for (int i = 0; i < u.length; i++) u[i] = a.getLong(i);
+                  return u;
+              }
+
+              /* ---------------- folders ---------------- */
+
+              static String roleByName(String name) {
+                  String n = name.toLowerCase().trim();
+                  switch (n) {
+                      case "archive": case "archives": return "archive";
+                      case "sent": case "sent items": case "sent messages": case "sent mail": return "sent";
+                      case "trash": case "deleted": case "deleted items": case "deleted messages": case "bin": return "trash";
+                      case "spam": case "junk": case "junk e-mail": case "junk email": case "bulk mail": case "bulk": return "spam";
+                      case "drafts": case "draft": return "drafts";
+                      default: return null;
+                  }
+              }
+
+              static JSONObject folders(Acct acct) throws Exception {
+                  JSONObject sp = new JSONObject();
+                  JSONArray labels = new JSONArray();
+                  sp.put("inbox", "INBOX");
+                  Map<String, String> byName = new HashMap<>();
+                  for (Folder f : store(acct).getDefaultFolder().list("*")) {
+                      String[] attrs = ((IMAPFolder) f).getAttributes();
+                      String role = null;
+                      boolean noSelect = false;
+                      for (String at : attrs) {
+                          switch (at) {
+                              case "\\All": role = "all"; break;
+                              case "\\Archive": role = "archive"; break;
+                              case "\\Sent": role = "sent"; break;
+                              case "\\Trash": role = "trash"; break;
+                              case "\\Drafts": role = "drafts"; break;
+                              case "\\Junk": role = "spam"; break;
+                              case "\\Flagged": role = "starred"; break;
+                              case "\\Important": role = "important"; break;
+                              case "\\Noselect": case "\\NonExistent": noSelect = true; break;
+                              default: break;
+                          }
+                      }
+                      if (noSelect) continue;
+                      String full = f.getFullName();
+                      if (SNOOZE_FOLDER.equals(full)) { sp.put("snoozed", full); continue; }
+                      if (role != null) sp.put(role, full);
+                      else if (!"INBOX".equalsIgnoreCase(full)) {
+                          String r = roleByName(f.getName());
+                          if (r != null && !byName.containsKey(r)) byName.put(r, full);
+                          else labels.put(full);
+                      }
+                  }
+                  for (Map.Entry<String, String> e : byName.entrySet()) {
+                      if (!sp.has(e.getKey())) sp.put(e.getKey(), e.getValue());
+                      else labels.put(e.getValue());
+                  }
+                  JSONObject o = new JSONObject();
+                  o.put("special", sp);
+                  o.put("labels", labels);
+                  return o;
+              }
+
+              static String special(Acct a, String role, String fallback) {
+                  try {
+                      JSONObject sp = folders(a).getJSONObject("special");
+                      if ("archive".equals(role) && a.gmail()) return sp.optString("all", fallback);
+                      return sp.optString(role, fallback);
+                  } catch (Exception e) {
+                      return fallback;
+                  }
+              }
+
+              static void move(Acct acct, IMAPFolder f, Message[] arr, String dest) throws Exception {
+                  IMAPFolder to = (IMAPFolder) store(acct).getFolder(dest);
+                  if (!to.exists()) to.create(Folder.HOLDS_MESSAGES);
+                  if (store(acct).hasCapability("MOVE")) {
+                      f.moveMessages(arr, to);
+                  } else {
+                      f.copyMessages(arr, to);
+                      f.setFlags(arr, new Flags(Flags.Flag.DELETED), true);
+                      expunge(f, arr);
+                  }
+              }
+
+              static void expunge(IMAPFolder f, Message[] arr) throws Exception {
+                  try { f.expunge(arr); } catch (Exception e) { f.expunge(); }
+              }
+
+              static void deleteForever(IMAPFolder f, Message[] arr) throws Exception {
+                  f.setFlags(arr, new Flags(Flags.Flag.DELETED), true);
+                  expunge(f, arr);
+              }
+
+              /* ---------------- building and sending ---------------- */
+
+              static Session smtpSession(Acct acct) {
+                  Properties pr = new Properties();
+                  pr.put("mail.smtp.host", acct.smtpHost);
+                  pr.put("mail.smtp.port", String.valueOf(acct.smtpPort));
+                  pr.put("mail.smtp.auth", "true");
+                  if ("starttls".equals(acct.smtpSec)) {
+                      pr.put("mail.smtp.starttls.enable", "true");
+                      pr.put("mail.smtp.starttls.required", "true");
+                  } else {
+                      pr.put("mail.smtp.ssl.enable", "true");
+                  }
+                  pr.put("mail.smtp.connectiontimeout", "15000");
+                  pr.put("mail.smtp.timeout", "60000");
+                  return Session.getInstance(pr);
+              }
+
+              static MimeMessage build(Session s, Acct acct, JSONObject a) throws Exception {
+                  MimeMessage mm = new MimeMessage(s);
+                  String name = a.optString("name", "");
+                  mm.setFrom(name.isEmpty() ? new InternetAddress(acct.email) : new InternetAddress(acct.email, name, "UTF-8"));
+                  String to = a.optString("to", "").trim();
+                  if (!to.isEmpty()) mm.setRecipients(Message.RecipientType.TO, InternetAddress.parse(to));
+                  String cc = a.optString("cc", "").trim();
+                  if (!cc.isEmpty()) mm.setRecipients(Message.RecipientType.CC, InternetAddress.parse(cc));
+                  mm.setSubject(a.optString("subject", ""), "UTF-8");
+                  String inReply = a.optString("inReplyTo", "");
+                  if (!inReply.isEmpty()) {
+                      mm.setHeader("In-Reply-To", inReply);
+                      String refs = a.optString("references", "").trim();
+                      mm.setHeader("References", (refs.isEmpty() ? "" : refs + " ") + inReply);
+                  }
+                  JSONArray atts = a.optJSONArray("attachments");
+                  if (atts != null && atts.length() > 0) {
+                      MimeMultipart mp = new MimeMultipart();
+                      MimeBodyPart tp = new MimeBodyPart();
+                      tp.setText(a.optString("body", ""), "UTF-8");
+                      mp.addBodyPart(tp);
+                      for (int i = 0; i < atts.length(); i++) {
+                          JSONObject x = atts.getJSONObject(i);
+                          byte[] bytes = Base64.decode(x.getString("b64"), Base64.DEFAULT);
+                          MimeBodyPart ap = new MimeBodyPart();
+                          ap.setDataHandler(new DataHandler(new ByteArrayDataSource(bytes, x.optString("mime", "application/octet-stream"))));
+                          ap.setFileName(x.optString("name", "file"));
+                          mp.addBodyPart(ap);
+                      }
+                      mm.setContent(mp);
+                  } else {
+                      mm.setText(a.optString("body", ""), "UTF-8");
+                  }
+                  mm.setSentDate(new java.util.Date());
+                  return mm;
+              }
+
+              /** Sends, files a copy in Sent (non-Gmail) and removes the matching server draft. */
+              static void send(Acct acct, JSONObject a) throws Exception {
+                  MimeMessage mm = build(smtpSession(acct), acct, a);
+                  mm.saveChanges();
+                  Transport.send(mm, acct.user, acct.pw);
+                  synchronized (acct) {
+                      if (!acct.gmail()) {
+                          String sent = a.optString("sentFolder", "");
+                          if (sent.isEmpty()) sent = special(acct, "sent", "Sent");
+                          try {
+                              IMAPFolder f = (IMAPFolder) store(acct).getFolder(sent);
+                              if (!f.exists()) f.create(Folder.HOLDS_MESSAGES);
+                              mm.setFlag(Flags.Flag.SEEN, true);
+                              f.appendMessages(new Message[]{mm});
+                          } catch (Exception ignored) { }
+                      }
+                      String dk = a.optString("draftKey", ""), df = a.optString("draftsFolder", "");
+                      if (!dk.isEmpty() && !df.isEmpty()) {
+                          try { deleteDraft(acct, df, dk); } catch (Exception ignored) { }
+                      }
+                  }
+              }
+
+              static void saveDraft(Acct acct, JSONObject a) throws Exception {
+                  String folder = a.getString("folder"), dk = a.getString("draftKey");
+                  MimeMessage mm = build(Session.getInstance(new Properties()), acct, a);
+                  mm.setHeader("X-Brisk-Draft", dk);
+                  mm.setFlag(Flags.Flag.DRAFT, true);
+                  mm.setFlag(Flags.Flag.SEEN, true);
+                  mm.saveChanges();
+                  IMAPFolder f = (IMAPFolder) store(acct).getFolder(folder);
+                  if (!f.exists()) f.create(Folder.HOLDS_MESSAGES);
+                  deleteDraft(acct, folder, dk);
+                  f.appendMessages(new Message[]{mm});
+              }
+
+              static void deleteDraft(Acct acct, String folder, String dk) throws Exception {
+                  if (!exists(acct, folder)) return;
+                  IMAPFolder f = folder(acct, folder);
+                  Message[] found = f.search(new HeaderTerm("X-Brisk-Draft", dk));
+                  if (found.length > 0) deleteForever(f, found);
+              }
+
+              /* ---------------- snooze ---------------- */
+
+              static void snooze(Context c, Acct acct, IMAPFolder f, Message[] arr, long until) throws Exception {
+                  JSONArray list = Acct.arr(c, "snoozes");
+                  for (Message m : arr) {
+                      String mid = m instanceof MimeMessage ? ((MimeMessage) m).getMessageID() : null;
+                      if (mid == null) continue;
+                      JSONObject e = new JSONObject();
+                      e.put("acct", acct.id); e.put("mid", mid); e.put("until", until);
+                      e.put("subj", m.getSubject() == null ? "" : m.getSubject());
+                      Address[] fr = m.getFrom();
+                      e.put("from", fr != null && fr.length > 0 ? (fr[0] instanceof InternetAddress && ((InternetAddress) fr[0]).getPersonal() != null ? ((InternetAddress) fr[0]).getPersonal() : fr[0].toString()) : "");
+                      list.put(e);
+                  }
+                  move(acct, f, arr, SNOOZE_FOLDER);
+                  Acct.put(c, "snoozes", list);
+              }
+
+              /** Moves snoozed emails whose time has come (or all of `onlyMid` when given) back to the inbox, unread. Returns the woken entries. */
+              static List<JSONObject> wake(Context c, Acct acct, String onlyMid, boolean force) throws Exception {
+                  JSONArray list = Acct.arr(c, "snoozes"), keep = new JSONArray();
+                  List<JSONObject> woken = new ArrayList<>();
+                  long now = System.currentTimeMillis();
+                  for (int i = 0; i < list.length(); i++) {
+                      JSONObject e = list.getJSONObject(i);
+                      boolean mine = acct.id.equals(e.optString("acct"));
+                      boolean due = force || e.optLong("until") <= now;
+                      if (onlyMid != null) due = onlyMid.equals(e.optString("mid"));
+                      if (mine && due) woken.add(e); else keep.put(e);
+                  }
+                  if (woken.isEmpty()) return woken;
+                  if (exists(acct, SNOOZE_FOLDER)) {
+                      IMAPFolder f = folder(acct, SNOOZE_FOLDER);
+                      for (JSONObject e : woken) {
+                          Message[] found = f.search(new HeaderTerm("Message-ID", e.getString("mid")));
+                          if (found.length == 0) continue;
+                          f.setFlags(found, new Flags(Flags.Flag.SEEN), false);
+                          move(acct, f, found, "INBOX");
+                      }
+                  }
+                  // Re-read in case another thread added entries meanwhile.
+                  JSONArray now2 = Acct.arr(c, "snoozes"), merged = new JSONArray();
+                  for (int i = 0; i < now2.length(); i++) {
+                      JSONObject e = now2.getJSONObject(i);
+                      boolean gone = false;
+                      for (JSONObject w : woken) if (w.optString("mid").equals(e.optString("mid")) && w.optString("acct").equals(e.optString("acct"))) gone = true;
+                      if (!gone) merged.put(e);
+                  }
+                  Acct.put(c, "snoozes", merged);
+                  return woken;
+              }
+
+              /* ---------------- send later ---------------- */
+
+              static File outbox(Context c) {
+                  File d = new File(c.getFilesDir(), "outbox");
+                  if (!d.exists()) d.mkdirs();
+                  return d;
+              }
+
+              static JSONObject schedule(Context c, JSONObject payload, long at) throws Exception {
+                  String id = UUID.randomUUID().toString().substring(0, 10);
+                  try (FileOutputStream o = new FileOutputStream(new File(outbox(c), id + ".json"))) {
+                      o.write(payload.toString().getBytes(StandardCharsets.UTF_8));
+                  }
+                  JSONObject e = new JSONObject();
+                  e.put("id", id); e.put("acct", payload.getString("acct")); e.put("at", at);
+                  e.put("to", payload.optString("to")); e.put("subject", payload.optString("subject"));
+                  JSONArray list = Acct.arr(c, "scheduled");
+                  list.put(e);
+                  Acct.put(c, "scheduled", list);
+                  return e;
+              }
+
+              static JSONObject payload(Context c, String id) throws Exception {
+                  File f = new File(outbox(c), id + ".json");
+                  try (FileInputStream in = new FileInputStream(f)) {
+                      return new JSONObject(new String(readAll(in), StandardCharsets.UTF_8));
+                  }
+              }
+
+              static void unschedule(Context c, String id) {
+                  JSONArray list = Acct.arr(c, "scheduled"), keep = new JSONArray();
+                  for (int i = 0; i < list.length(); i++) {
+                      JSONObject e = list.optJSONObject(i);
+                      if (e != null && !id.equals(e.optString("id"))) keep.put(e);
+                  }
+                  Acct.put(c, "scheduled", keep);
+                  new File(outbox(c), id + ".json").delete();
+              }
+
+              /** Earliest pending snooze or scheduled send, or 0. */
+              static long nextDue(Context c) {
+                  long best = 0;
+                  for (String k : new String[]{"snoozes", "scheduled"}) {
+                      JSONArray l = Acct.arr(c, k);
+                      for (int i = 0; i < l.length(); i++) {
+                          JSONObject e = l.optJSONObject(i);
+                          if (e == null) continue;
+                          long t = e.optLong("snoozes".equals(k) ? "until" : "at");
+                          if (t > 0 && (best == 0 || t < best)) best = t;
+                      }
+                  }
+                  return best;
+              }
+          }
+          BRISK_EOF
+          mkdir -p android/app/src/main/java/com/daveg27/brisk
           cat > android/app/src/main/java/com/daveg27/brisk/MainActivity.java <<'BRISK_EOF'
           package com.daveg27.brisk;
 
           import android.annotation.SuppressLint;
           import android.app.Activity;
+          import android.app.KeyguardManager;
+          import android.app.NotificationManager;
           import android.content.ContentValues;
-          import android.content.Context;
           import android.content.Intent;
-          import android.content.SharedPreferences;
+          import android.content.pm.PackageManager;
           import android.graphics.Color;
+          import android.hardware.biometrics.BiometricManager;
+          import android.hardware.biometrics.BiometricPrompt;
           import android.net.Uri;
           import android.os.Build;
           import android.os.Bundle;
+          import android.os.CancellationSignal;
           import android.os.Environment;
           import android.os.Message;
+          import android.provider.CalendarContract;
           import android.provider.MediaStore;
-          import android.security.keystore.KeyGenParameterSpec;
-          import android.security.keystore.KeyProperties;
-          import android.util.Base64;
+          import android.view.View;
           import android.view.Window;
           import android.webkit.JavascriptInterface;
           import android.webkit.ValueCallback;
@@ -240,88 +1336,49 @@ jobs:
           import org.json.JSONArray;
           import org.json.JSONObject;
 
-          import java.io.ByteArrayOutputStream;
           import java.io.InputStream;
           import java.io.OutputStream;
-          import java.nio.charset.StandardCharsets;
-          import java.security.KeyStore;
           import java.util.ArrayList;
           import java.util.Arrays;
-          import java.util.HashMap;
           import java.util.LinkedHashMap;
           import java.util.List;
           import java.util.Map;
-          import java.util.Properties;
           import java.util.UUID;
           import java.util.concurrent.ExecutorService;
           import java.util.concurrent.Executors;
 
-          import javax.activation.DataHandler;
-          import javax.crypto.Cipher;
-          import javax.crypto.KeyGenerator;
-          import javax.crypto.SecretKey;
-          import javax.crypto.spec.GCMParameterSpec;
-          import javax.mail.Address;
-          import javax.mail.FetchProfile;
           import javax.mail.Flags;
-          import javax.mail.Folder;
-          import javax.mail.Multipart;
           import javax.mail.Part;
-          import javax.mail.Session;
-          import javax.mail.Transport;
-          import javax.mail.UIDFolder;
-          import javax.mail.internet.InternetAddress;
-          import javax.mail.internet.MimeBodyPart;
-          import javax.mail.internet.MimeMessage;
-          import javax.mail.internet.MimeMultipart;
           import javax.mail.search.AndTerm;
           import javax.mail.search.BodyTerm;
           import javax.mail.search.FromStringTerm;
           import javax.mail.search.OrTerm;
           import javax.mail.search.SearchTerm;
           import javax.mail.search.SubjectTerm;
-          import javax.mail.util.ByteArrayDataSource;
 
           import com.sun.mail.iap.Argument;
           import com.sun.mail.iap.Response;
           import com.sun.mail.imap.IMAPFolder;
           import com.sun.mail.imap.IMAPMessage;
-          import com.sun.mail.imap.IMAPStore;
           import com.sun.mail.imap.protocol.IMAPResponse;
 
           /**
            * Brisk Mail: the UI (assets/index.html) runs in a WebView; this class is the
-           * native mail engine. JS calls BriskNative.call(id, method, jsonArgs) and gets
-           * the answer back through window.__brisk(id, ok, data).
-           * Any number of IMAP/SMTP accounts (Gmail, Virgin Media, Yahoo, iCloud, others),
-           * each with an app password stored encrypted with a key in the Android Keystore.
+           * bridge to the mail engine. JS calls BriskNative.call(id, method, jsonArgs) and
+           * gets the answer back through window.__brisk(id, ok, data).
            */
           public class MainActivity extends Activity {
 
-              private static final int REQ_FILE = 51;
+              private static final int REQ_FILE = 51, REQ_LOCK = 52, REQ_NOTIFY = 53;
 
               private WebView web;
               private final ExecutorService imapPool = Executors.newFixedThreadPool(4);
               private final ExecutorService smtpPool = Executors.newSingleThreadExecutor();
               private ValueCallback<Uri[]> fileCallback;
-
-              /** One mail account and its live IMAP connection. All IMAP work on it is done while holding its lock. */
-              private static class Acct {
-                  String id, email, user, provider, imapHost, smtpHost, smtpSec, pw;
-                  int imapPort, smtpPort;
-                  IMAPStore store;
-                  final Map<String, IMAPFolder> open = new HashMap<>();
-
-                  boolean gmail() { return "imap.gmail.com".equalsIgnoreCase(imapHost); }
-
-                  JSONObject pub() throws Exception {
-                      JSONObject o = new JSONObject();
-                      o.put("id", id); o.put("email", email); o.put("provider", provider); o.put("gmail", gmail());
-                      return o;
-                  }
-              }
-
               private final Map<String, Acct> accounts = new LinkedHashMap<>();
+              private volatile String launch = null;
+              private boolean unlocked = false, prompting = false;
+              private long pausedAt = 0;
 
               @SuppressLint({"SetJavaScriptEnabled", "AddJavascriptInterface"})
               @Override
@@ -341,7 +1398,7 @@ jobs:
                   s.setDomStorageEnabled(true);
                   s.setAllowFileAccess(true);
                   s.setSupportMultipleWindows(true);
-                  s.setTextZoom(100);
+                  s.setTextZoom(Acct.prefs(this).getInt("textZoom", 100));
 
                   web.setWebViewClient(new WebViewClient() {
                       @Override
@@ -368,7 +1425,6 @@ jobs:
                           return true;
                       }
 
-                      /* Links in email (target=_blank) open in the phone's browser. */
                       @Override
                       public boolean onCreateWindow(WebView v, boolean dialog, boolean user, Message msg) {
                           WebView tmp = new WebView(MainActivity.this);
@@ -386,12 +1442,88 @@ jobs:
                       }
                   });
                   web.addJavascriptInterface(new Bridge(), "BriskNative");
-                  loadAccounts();
+                  for (Acct a : Acct.loadAll(this)) accounts.put(a.id, a);
+                  takeIntent(getIntent());
                   web.loadUrl("file:///android_asset/index.html");
+                  CheckJob.channel(this);
+                  CheckJob.schedule(this);
+              }
+
+              private void takeIntent(Intent i) {
+                  if (i == null) return;
+                  if (i.getStringExtra("open") != null) launch = "{\"open\":" + i.getStringExtra("open") + "}";
+                  else if (i.getBooleanExtra("compose", false)) launch = "{\"compose\":true}";
+              }
+
+              @Override
+              protected void onNewIntent(Intent i) {
+                  super.onNewIntent(i);
+                  takeIntent(i);
+                  if (launch != null) {
+                      final String l = launch;
+                      launch = null;
+                      web.evaluateJavascript("window.briskLaunch && briskLaunch(" + l + ")", null);
+                  }
+              }
+
+              /* ---------------- app lock ---------------- */
+
+              @Override
+              protected void onResume() {
+                  super.onResume();
+                  boolean lock = Acct.prefs(this).getBoolean("lock", false);
+                  if (lock && !prompting && (!unlocked || System.currentTimeMillis() - pausedAt > 30000)) {
+                      unlocked = false;
+                      web.setVisibility(View.INVISIBLE);
+                      promptUnlock();
+                  } else if (!lock) {
+                      web.setVisibility(View.VISIBLE);
+                  }
+              }
+
+              @Override
+              protected void onPause() {
+                  super.onPause();
+                  if (!prompting) pausedAt = System.currentTimeMillis();
+              }
+
+              private void unlock() {
+                  prompting = false;
+                  unlocked = true;
+                  pausedAt = System.currentTimeMillis();
+                  web.setVisibility(View.VISIBLE);
+              }
+
+              private void promptUnlock() {
+                  prompting = true;
+                  if (Build.VERSION.SDK_INT >= 30) {
+                      BiometricPrompt bp = new BiometricPrompt.Builder(this)
+                              .setTitle("Unlock Brisk")
+                              .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_WEAK
+                                      | BiometricManager.Authenticators.DEVICE_CREDENTIAL)
+                              .build();
+                      bp.authenticate(new CancellationSignal(), getMainExecutor(), new BiometricPrompt.AuthenticationCallback() {
+                          @Override
+                          public void onAuthenticationSucceeded(BiometricPrompt.AuthenticationResult r) { unlock(); }
+
+                          @Override
+                          public void onAuthenticationError(int code, CharSequence msg) { prompting = false; finish(); }
+                      });
+                  } else {
+                      KeyguardManager km = getSystemService(KeyguardManager.class);
+                      Intent i = km == null ? null : km.createConfirmDeviceCredentialIntent("Unlock Brisk", null);
+                      if (i == null) unlock();
+                      else startActivityForResult(i, REQ_LOCK);
+                  }
               }
 
               @Override
               protected void onActivityResult(int req, int res, Intent data) {
+                  if (req == REQ_LOCK) {
+                      if (res == RESULT_OK) unlock();
+                      else { prompting = false; finish(); }
+                      return;
+                  }
                   if (req == REQ_FILE && fileCallback != null) {
                       Uri[] out = null;
                       if (res == RESULT_OK && data != null) {
@@ -422,7 +1554,7 @@ jobs:
                   imapPool.execute(() -> {
                       List<Acct> list;
                       synchronized (accounts) { list = new ArrayList<>(accounts.values()); }
-                      for (Acct a : list) synchronized (a) { closeAll(a); }
+                      for (Acct a : list) synchronized (a) { Mail.closeAll(a); }
                   });
                   super.onDestroy();
               }
@@ -433,134 +1565,10 @@ jobs:
                   } catch (Exception ignored) { }
               }
 
-              /* ---------------- credentials (AES-GCM, key in Android Keystore) ---------------- */
-
-              private SecretKey key() throws Exception {
-                  KeyStore ks = KeyStore.getInstance("AndroidKeyStore");
-                  ks.load(null);
-                  if (!ks.containsAlias("brisk")) {
-                      KeyGenerator kg = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore");
-                      kg.init(new KeyGenParameterSpec.Builder("brisk",
-                              KeyProperties.PURPOSE_ENCRYPT | KeyProperties.PURPOSE_DECRYPT)
-                              .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
-                              .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
-                              .build());
-                      kg.generateKey();
-                  }
-                  return (SecretKey) ks.getKey("brisk", null);
-              }
-
-              private String enc(String plain) throws Exception {
-                  Cipher c = Cipher.getInstance("AES/GCM/NoPadding");
-                  c.init(Cipher.ENCRYPT_MODE, key());
-                  byte[] ct = c.doFinal(plain.getBytes(StandardCharsets.UTF_8));
-                  return Base64.encodeToString(c.getIV(), Base64.NO_WRAP) + ":" + Base64.encodeToString(ct, Base64.NO_WRAP);
-              }
-
-              private String dec(String blob) throws Exception {
-                  String[] parts = blob.split(":");
-                  Cipher c = Cipher.getInstance("AES/GCM/NoPadding");
-                  c.init(Cipher.DECRYPT_MODE, key(), new GCMParameterSpec(128, Base64.decode(parts[0], Base64.NO_WRAP)));
-                  return new String(c.doFinal(Base64.decode(parts[1], Base64.NO_WRAP)), StandardCharsets.UTF_8);
-              }
-
-              private SharedPreferences prefs() {
-                  return getSharedPreferences("brisk", Context.MODE_PRIVATE);
-              }
-
               private void saveAccounts() throws Exception {
-                  JSONArray arr = new JSONArray();
-                  SharedPreferences.Editor ed = prefs().edit();
                   List<Acct> list;
                   synchronized (accounts) { list = new ArrayList<>(accounts.values()); }
-                  for (Acct a : list) {
-                      JSONObject o = new JSONObject();
-                      o.put("id", a.id); o.put("email", a.email); o.put("user", a.user); o.put("provider", a.provider);
-                      o.put("imapHost", a.imapHost); o.put("imapPort", a.imapPort);
-                      o.put("smtpHost", a.smtpHost); o.put("smtpPort", a.smtpPort); o.put("smtpSec", a.smtpSec);
-                      arr.put(o);
-                      ed.putString("pw_" + a.id, enc(a.pw));
-                  }
-                  ed.putString("accounts", arr.toString()).apply();
-              }
-
-              private void loadAccounts() {
-                  SharedPreferences p = prefs();
-                  try {
-                      String old = p.getString("email", null), oldPw = p.getString("pw", null);
-                      if (old != null && oldPw != null && p.getString("accounts", null) == null) {
-                          // Version 1 stored a single Gmail account: move it into the account list.
-                          Acct a = gmailAcct(old, dec(oldPw));
-                          accounts.put(a.id, a);
-                          saveAccounts();
-                          p.edit().remove("email").remove("pw").apply();
-                          return;
-                      }
-                      JSONArray arr = new JSONArray(p.getString("accounts", "[]"));
-                      for (int i = 0; i < arr.length(); i++) {
-                          JSONObject o = arr.getJSONObject(i);
-                          Acct a = new Acct();
-                          a.id = o.getString("id"); a.email = o.getString("email"); a.user = o.optString("user", a.email);
-                          a.provider = o.optString("provider", "other");
-                          a.imapHost = o.getString("imapHost"); a.imapPort = o.optInt("imapPort", 993);
-                          a.smtpHost = o.getString("smtpHost"); a.smtpPort = o.optInt("smtpPort", 465);
-                          a.smtpSec = o.optString("smtpSec", "ssl");
-                          String blob = p.getString("pw_" + a.id, null);
-                          if (blob == null) continue;
-                          try { a.pw = dec(blob); } catch (Exception e) { continue; }
-                          accounts.put(a.id, a);
-                      }
-                  } catch (Exception ignored) { }
-              }
-
-              private static Acct gmailAcct(String email, String pw) {
-                  Acct a = new Acct();
-                  a.id = UUID.randomUUID().toString().substring(0, 8);
-                  a.email = email; a.user = email; a.pw = pw; a.provider = "gmail";
-                  a.imapHost = "imap.gmail.com"; a.imapPort = 993;
-                  a.smtpHost = "smtp.gmail.com"; a.smtpPort = 465; a.smtpSec = "ssl";
-                  return a;
-              }
-
-              /* ---------------- IMAP plumbing ---------------- */
-
-              private static IMAPStore connect(Acct a) throws Exception {
-                  Properties pr = new Properties();
-                  pr.put("mail.store.protocol", "imaps");
-                  pr.put("mail.imaps.host", a.imapHost);
-                  pr.put("mail.imaps.port", String.valueOf(a.imapPort));
-                  pr.put("mail.imaps.connectiontimeout", "15000");
-                  pr.put("mail.imaps.timeout", "30000");
-                  pr.put("mail.imaps.partialfetch", "false");
-                  Session s = Session.getInstance(pr);
-                  IMAPStore st = (IMAPStore) s.getStore("imaps");
-                  st.connect(a.imapHost, a.imapPort, a.user, a.pw);
-                  return st;
-              }
-
-              private static IMAPStore store(Acct a) throws Exception {
-                  if (a.store != null && a.store.isConnected()) return a.store;
-                  closeAll(a);
-                  a.store = connect(a);
-                  return a.store;
-              }
-
-              private static IMAPFolder folder(Acct a, String path) throws Exception {
-                  IMAPFolder f = a.open.get(path);
-                  if (f != null && f.isOpen()) return f;
-                  f = (IMAPFolder) store(a).getFolder(path);
-                  f.open(Folder.READ_WRITE);
-                  a.open.put(path, f);
-                  return f;
-              }
-
-              private static void closeAll(Acct a) {
-                  for (IMAPFolder f : a.open.values()) {
-                      try { if (f.isOpen()) f.close(false); } catch (Exception ignored) { }
-                  }
-                  a.open.clear();
-                  try { if (a.store != null) a.store.close(); } catch (Exception ignored) { }
-                  a.store = null;
+                  Acct.saveAll(this, list);
               }
 
               private Acct acct(JSONObject args) throws Exception {
@@ -568,142 +1576,6 @@ jobs:
                   synchronized (accounts) { a = accounts.get(args.optString("acct", "")); }
                   if (a == null) throw new Exception("That account isn't signed in any more");
                   return a;
-              }
-
-              private static String addrs(Address[] a) {
-                  if (a == null) return "";
-                  StringBuilder sb = new StringBuilder();
-                  for (Address x : a) {
-                      if (sb.length() > 0) sb.append(", ");
-                      sb.append(x instanceof InternetAddress ? ((InternetAddress) x).toUnicodeString() : x.toString());
-                  }
-                  return sb.toString();
-              }
-
-              private static JSONObject summary(Acct acct, IMAPFolder f, javax.mail.Message m) throws Exception {
-                  JSONObject o = new JSONObject();
-                  o.put("acct", acct.id);
-                  o.put("uid", f.getUID(m));
-                  o.put("folder", f.getFullName());
-                  Address[] fr = m.getFrom();
-                  InternetAddress a = fr != null && fr.length > 0 && fr[0] instanceof InternetAddress ? (InternetAddress) fr[0] : null;
-                  String name = a == null ? "(unknown)" : (a.getPersonal() != null && !a.getPersonal().trim().isEmpty() ? a.getPersonal() : a.getAddress());
-                  o.put("from", name);
-                  o.put("email", a == null || a.getAddress() == null ? "" : a.getAddress());
-                  o.put("to", addrs(m.getRecipients(javax.mail.Message.RecipientType.TO)));
-                  String subj = m.getSubject();
-                  o.put("subj", subj == null || subj.trim().isEmpty() ? "(no subject)" : subj);
-                  java.util.Date d = m.getReceivedDate();
-                  if (d == null) d = m.getSentDate();
-                  o.put("t", d == null ? 0 : d.getTime());
-                  o.put("seen", m.isSet(Flags.Flag.SEEN));
-                  o.put("star", m.isSet(Flags.Flag.FLAGGED));
-                  String ct = m.getContentType();
-                  o.put("att", ct != null && ct.toLowerCase().startsWith("multipart/mixed"));
-                  return o;
-              }
-
-              private static FetchProfile listProfile() {
-                  FetchProfile fp = new FetchProfile();
-                  fp.add(FetchProfile.Item.ENVELOPE);
-                  fp.add(FetchProfile.Item.FLAGS);
-                  fp.add(FetchProfile.Item.CONTENT_INFO);
-                  fp.add(UIDFolder.FetchProfileItem.UID);
-                  return fp;
-              }
-
-              private static JSONArray summaries(Acct a, IMAPFolder f, javax.mail.Message[] ms) throws Exception {
-                  List<javax.mail.Message> ok = new ArrayList<>();
-                  for (javax.mail.Message m : ms) if (m != null) ok.add(m);
-                  javax.mail.Message[] arr = ok.toArray(new javax.mail.Message[0]);
-                  f.fetch(arr, listProfile());
-                  JSONArray items = new JSONArray();
-                  for (int i = arr.length - 1; i >= 0; i--) {
-                      try { items.put(summary(a, f, arr[i])); } catch (Exception ignored) { }
-                  }
-                  return items;
-              }
-
-              /* ---- body walking ---- */
-              private static class Body {
-                  String text, html;
-                  final List<Part> atts = new ArrayList<>();
-              }
-
-              private static String str(Object c) throws Exception {
-                  if (c instanceof String) return (String) c;
-                  if (c instanceof InputStream) return new String(readAll((InputStream) c), StandardCharsets.UTF_8);
-                  return c == null ? "" : c.toString();
-              }
-
-              private static byte[] readAll(InputStream in) throws Exception {
-                  ByteArrayOutputStream bo = new ByteArrayOutputStream();
-                  byte[] buf = new byte[16384];
-                  int n;
-                  while ((n = in.read(buf)) > 0) bo.write(buf, 0, n);
-                  in.close();
-                  return bo.toByteArray();
-              }
-
-              private static void walk(Part p, Body b) throws Exception {
-                  String disp = p.getDisposition(), fn = null;
-                  try { fn = p.getFileName(); } catch (Exception ignored) { }
-                  if (p.isMimeType("multipart/*")) {
-                      Multipart mp = (Multipart) p.getContent();
-                      for (int i = 0; i < mp.getCount(); i++) walk(mp.getBodyPart(i), b);
-                  } else if (p.isMimeType("message/rfc822")) {
-                      Object c = p.getContent();
-                      if (c instanceof Part) walk((Part) c, b);
-                  } else if (Part.ATTACHMENT.equalsIgnoreCase(disp) || (fn != null && !p.isMimeType("text/*"))) {
-                      b.atts.add(p);
-                  } else if (p.isMimeType("text/plain")) {
-                      if (b.text == null) b.text = str(p.getContent());
-                  } else if (p.isMimeType("text/html")) {
-                      if (b.html == null) b.html = str(p.getContent());
-                  } else if (fn != null) {
-                      b.atts.add(p);
-                  }
-              }
-
-              private static String plain(Body b) {
-                  if (b.text != null && !b.text.trim().isEmpty()) return b.text;
-                  if (b.html == null) return "";
-                  String h = b.html.replaceAll("(?is)<(style|script|head)[^>]*>.*?</\\1>", " ")
-                          .replaceAll("(?i)<br\\s*/?>|</p>|</div>|</tr>|</h[1-6]>", "\n")
-                          .replaceAll("<[^>]+>", " ")
-                          .replace("&nbsp;", " ").replace("&amp;", "&").replace("&lt;", "<")
-                          .replace("&gt;", ">").replace("&quot;", "\"").replace("&#39;", "'").replace("&pound;", "£");
-                  return h.replaceAll("[ \\t\\x0B\\f\\r]+", " ").replaceAll("\\n\\s*\\n+", "\n\n").trim();
-              }
-
-              private static String header(javax.mail.Message m, String name) throws Exception {
-                  String[] h = m.getHeader(name);
-                  return h == null || h.length == 0 ? "" : h[0];
-              }
-
-              private static javax.mail.Message byUid(IMAPFolder f, long uid) throws Exception {
-                  javax.mail.Message m = f.getMessageByUID(uid);
-                  if (m == null) throw new Exception("That email no longer exists");
-                  return m;
-              }
-
-              private static long[] longs(JSONArray a) throws Exception {
-                  long[] u = new long[a.length()];
-                  for (int i = 0; i < u.length; i++) u[i] = a.getLong(i);
-                  return u;
-              }
-
-              /** Folder role from its name, for servers that don't mark special folders (Virgin Media and others). */
-              private static String roleByName(String name) {
-                  String n = name.toLowerCase().trim();
-                  switch (n) {
-                      case "archive": case "archives": return "archive";
-                      case "sent": case "sent items": case "sent messages": case "sent mail": return "sent";
-                      case "trash": case "deleted": case "deleted items": case "deleted messages": case "bin": return "trash";
-                      case "spam": case "junk": case "junk e-mail": case "junk email": case "bulk mail": case "bulk": return "spam";
-                      case "drafts": case "draft": return "drafts";
-                      default: return null;
-                  }
               }
 
               /* ---------------- methods callable from the UI ---------------- */
@@ -715,6 +1587,7 @@ jobs:
                           synchronized (accounts) { for (Acct x : accounts.values()) arr.put(x.pub()); }
                           JSONObject o = new JSONObject();
                           o.put("accounts", arr);
+                          o.put("lock", Acct.prefs(this).getBoolean("lock", false));
                           return o;
                       }
                       case "login": {
@@ -736,7 +1609,7 @@ jobs:
                                   if (x.email.equalsIgnoreCase(n.email)) throw new Exception(n.email + " is already added");
                           }
                           try {
-                              n.store = connect(n);
+                              n.store = Mail.connect(n);
                           } catch (javax.mail.AuthenticationFailedException ex) {
                               throw new Exception("The server rejected that email or password. Check you used an app password, not your normal one.");
                           }
@@ -748,11 +1621,46 @@ jobs:
                           Acct x;
                           synchronized (accounts) { x = accounts.remove(a.optString("acct", "")); }
                           if (x != null) {
-                              synchronized (x) { closeAll(x); }
-                              prefs().edit().remove("pw_" + x.id).apply();
+                              synchronized (x) { Mail.closeAll(x); }
+                              Acct.prefs(this).edit().remove("pw_" + x.id).remove("lastUid_" + x.id).remove("uidv_" + x.id).apply();
                               saveAccounts();
                           }
                           return new JSONObject();
+                      }
+                      case "notifyConfig": {
+                          Acct.put(this, "notify", a);
+                          if (a.optBoolean("enabled", true)) runOnUiThread(this::askNotifyPermission);
+                          return new JSONObject();
+                      }
+                      case "snoozes": {
+                          JSONObject o = new JSONObject();
+                          o.put("items", Acct.arr(this, "snoozes"));
+                          return o;
+                      }
+                      case "scheduled": {
+                          JSONObject o = new JSONObject();
+                          o.put("items", Acct.arr(this, "scheduled"));
+                          return o;
+                      }
+                      case "schedule": {
+                          JSONObject e = Mail.schedule(this, a.getJSONObject("payload"), a.getLong("at"));
+                          CheckJob.scheduleNext(this);
+                          return e;
+                      }
+                      case "unschedule": {
+                          Mail.unschedule(this, a.getString("id"));
+                          CheckJob.scheduleNext(this);
+                          return new JSONObject();
+                      }
+                      case "wakeDue": {
+                          int n = 0;
+                          List<Acct> list;
+                          synchronized (accounts) { list = new ArrayList<>(accounts.values()); }
+                          for (Acct x : list) synchronized (x) { n += Mail.wake(this, x, null, false).size(); }
+                          CheckJob.scheduleNext(this);
+                          JSONObject o = new JSONObject();
+                          o.put("woken", n);
+                          return o;
                       }
                       default: {
                           Acct x = acct(a);
@@ -760,7 +1668,7 @@ jobs:
                               try {
                                   return runFor(x, method, a);
                               } catch (javax.mail.FolderClosedException | javax.mail.StoreClosedException ex) {
-                                  closeAll(x); // dropped connection: reconnect once and retry
+                                  Mail.closeAll(x); // dropped connection: reconnect once and retry
                                   return runFor(x, method, a);
                               }
                           }
@@ -768,89 +1676,52 @@ jobs:
                   }
               }
 
+              private javax.mail.Message[] byUids(IMAPFolder f, JSONArray uids) throws Exception {
+                  return Mail.nonNull(f.getMessagesByUID(Mail.longs(uids)));
+              }
+
               private Object runFor(Acct acct, String method, JSONObject a) throws Exception {
                   switch (method) {
-                      case "folders": {
-                          JSONObject sp = new JSONObject();
-                          JSONArray labels = new JSONArray();
-                          sp.put("inbox", "INBOX");
-                          Map<String, String> byName = new HashMap<>();
-                          for (Folder f : store(acct).getDefaultFolder().list("*")) {
-                              String[] attrs = ((IMAPFolder) f).getAttributes();
-                              String role = null;
-                              boolean noSelect = false;
-                              for (String at : attrs) {
-                                  switch (at) {
-                                      case "\\All": role = "all"; break;
-                                      case "\\Archive": role = "archive"; break;
-                                      case "\\Sent": role = "sent"; break;
-                                      case "\\Trash": role = "trash"; break;
-                                      case "\\Drafts": role = "drafts"; break;
-                                      case "\\Junk": role = "spam"; break;
-                                      case "\\Flagged": role = "starred"; break;
-                                      case "\\Important": role = "important"; break;
-                                      case "\\Noselect": case "\\NonExistent": noSelect = true; break;
-                                      default: break;
-                                  }
-                              }
-                              if (noSelect) continue;
-                              String full = f.getFullName();
-                              if (role != null) sp.put(role, full);
-                              else if (!"INBOX".equalsIgnoreCase(full)) {
-                                  String r = roleByName(f.getName());
-                                  if (r != null && !byName.containsKey(r)) byName.put(r, full);
-                                  else labels.put(full);
-                              }
-                          }
-                          for (Map.Entry<String, String> e : byName.entrySet()) {
-                              if (!sp.has(e.getKey())) sp.put(e.getKey(), e.getValue());
-                              else labels.put(e.getValue());
-                          }
-                          JSONObject o = new JSONObject();
-                          o.put("special", sp);
-                          o.put("labels", labels);
-                          return o;
-                      }
+                      case "folders":
+                          return Mail.folders(acct);
                       case "list": {
-                          IMAPFolder f = folder(acct, a.getString("folder"));
+                          JSONObject o = new JSONObject();
+                          String path = a.getString("folder");
+                          if (!"INBOX".equals(path) && !Mail.exists(acct, path)) {
+                              o.put("total", 0); o.put("items", new JSONArray());
+                              return o;
+                          }
+                          IMAPFolder f = Mail.folder(acct, path);
                           int offset = a.optInt("offset", 0), count = a.optInt("count", 40);
                           int total = f.getMessageCount();
                           int end = total - offset, start = Math.max(1, end - count + 1);
-                          JSONObject o = new JSONObject();
                           o.put("total", total);
-                          o.put("items", end >= 1 ? summaries(acct, f, f.getMessages(start, end)) : new JSONArray());
+                          o.put("items", end >= 1 ? Mail.summaries(acct, f, f.getMessages(start, end)) : new JSONArray());
                           return o;
                       }
                       case "snippets": {
-                          IMAPFolder f = folder(acct, a.getString("folder"));
+                          IMAPFolder f = Mail.folder(acct, a.getString("folder"));
                           JSONObject out = new JSONObject();
-                          for (javax.mail.Message m : f.getMessagesByUID(longs(a.getJSONArray("uids")))) {
-                              if (m == null) continue;
-                              try {
-                                  ((IMAPMessage) m).setPeek(true);
-                                  Body b = new Body();
-                                  walk(m, b);
-                                  String t = plain(b).replaceAll("\\s+", " ").trim();
-                                  out.put(String.valueOf(f.getUID(m)), t.length() > 600 ? t.substring(0, 600) : t);
-                              } catch (Exception ignored) { }
-                          }
+                          for (javax.mail.Message m : byUids(f, a.getJSONArray("uids")))
+                              out.put(String.valueOf(f.getUID(m)), Mail.snippet(m));
                           return out;
                       }
                       case "body": {
-                          IMAPFolder f = folder(acct, a.getString("folder"));
-                          javax.mail.Message m = byUid(f, a.getLong("uid"));
+                          IMAPFolder f = Mail.folder(acct, a.getString("folder"));
+                          javax.mail.Message m = Mail.byUid(f, a.getLong("uid"));
                           ((IMAPMessage) m).setPeek(true);
-                          Body b = new Body();
-                          walk(m, b);
-                          if (!m.isSet(Flags.Flag.SEEN)) m.setFlag(Flags.Flag.SEEN, true);
-                          JSONObject o = summary(acct, f, m);
-                          o.put("text", plain(b));
+                          Mail.Body b = new Mail.Body();
+                          Mail.walk(m, b);
+                          if (!m.isSet(Flags.Flag.SEEN) && !a.optBoolean("peek", false)) m.setFlag(Flags.Flag.SEEN, true);
+                          JSONObject o = Mail.summary(acct, f, m);
+                          o.put("text", Mail.plain(b));
                           o.put("html", b.html == null ? JSONObject.NULL : b.html);
-                          o.put("cc", addrs(m.getRecipients(javax.mail.Message.RecipientType.CC)));
-                          o.put("replyTo", addrs(m.getReplyTo()));
-                          o.put("messageId", header(m, "Message-ID"));
-                          o.put("references", header(m, "References"));
-                          o.put("unsub", header(m, "List-Unsubscribe"));
+                          o.put("cc", Mail.addrs(m.getRecipients(javax.mail.Message.RecipientType.CC)));
+                          o.put("replyTo", Mail.addrs(m.getReplyTo()));
+                          o.put("messageId", Mail.header(m, "Message-ID"));
+                          o.put("references", Mail.header(m, "References"));
+                          o.put("unsub", Mail.header(m, "List-Unsubscribe"));
+                          o.put("draftKey", Mail.header(m, "X-Brisk-Draft"));
                           JSONArray at = new JSONArray();
                           for (int i = 0; i < b.atts.size(); i++) {
                               Part p = b.atts.get(i);
@@ -867,11 +1738,11 @@ jobs:
                       }
                       case "attachment": {
                           if (Build.VERSION.SDK_INT < 29) throw new Exception("Saving attachments needs Android 10 or newer");
-                          IMAPFolder f = folder(acct, a.getString("folder"));
-                          javax.mail.Message m = byUid(f, a.getLong("uid"));
+                          IMAPFolder f = Mail.folder(acct, a.getString("folder"));
+                          javax.mail.Message m = Mail.byUid(f, a.getLong("uid"));
                           ((IMAPMessage) m).setPeek(true);
-                          Body b = new Body();
-                          walk(m, b);
+                          Mail.Body b = new Mail.Body();
+                          Mail.walk(m, b);
                           Part p = b.atts.get(a.getInt("idx"));
                           String name = p.getFileName() == null ? "attachment" : p.getFileName();
                           String mime = p.getContentType() == null ? "application/octet-stream" : p.getContentType().split(";")[0].trim().toLowerCase();
@@ -899,11 +1770,17 @@ jobs:
                           return o;
                       }
                       case "search": {
-                          IMAPFolder f = folder(acct, a.getString("folder"));
+                          String path = a.getString("folder");
+                          JSONObject o = new JSONObject();
+                          if (!"INBOX".equals(path) && !Mail.exists(acct, path)) {
+                              o.put("total", 0); o.put("items", new JSONArray());
+                              return o;
+                          }
+                          IMAPFolder f = Mail.folder(acct, path);
                           int max = a.optInt("count", 60);
                           javax.mail.Message[] found;
                           int total;
-                          if (acct.gmail()) {
+                          if (acct.gmail() && a.has("query")) {
                               final String q = a.getString("query");
                               @SuppressWarnings("unchecked")
                               List<Long> uids = (List<Long>) f.doCommand(pr -> {
@@ -933,7 +1810,8 @@ jobs:
                               if (terms != null) {
                                   for (int i = 0; i < terms.length(); i++) {
                                       String t = terms.getString(i);
-                                      SearchTerm one = new OrTerm(new SearchTerm[]{new SubjectTerm(t), new FromStringTerm(t), new BodyTerm(t)});
+                                      SearchTerm one = a.optBoolean("fromOnly", false) ? new FromStringTerm(t)
+                                              : new OrTerm(new SearchTerm[]{new SubjectTerm(t), new FromStringTerm(t), new BodyTerm(t)});
                                       st = st == null ? one : new AndTerm(st, one);
                                   }
                               }
@@ -941,17 +1819,13 @@ jobs:
                               total = all.length;
                               found = Arrays.copyOfRange(all, Math.max(0, all.length - max), all.length);
                           }
-                          JSONObject o = new JSONObject();
                           o.put("total", total);
-                          o.put("items", found.length > 0 ? summaries(acct, f, found) : new JSONArray());
+                          o.put("items", found.length > 0 ? Mail.summaries(acct, f, found) : new JSONArray());
                           return o;
                       }
                       case "act": {
-                          IMAPFolder f = folder(acct, a.getString("folder"));
-                          javax.mail.Message[] ms = f.getMessagesByUID(longs(a.getJSONArray("uids")));
-                          List<javax.mail.Message> ok = new ArrayList<>(Arrays.asList(ms));
-                          ok.removeIf(x -> x == null);
-                          javax.mail.Message[] arr = ok.toArray(new javax.mail.Message[0]);
+                          IMAPFolder f = Mail.folder(acct, a.getString("folder"));
+                          javax.mail.Message[] arr = byUids(f, a.getJSONArray("uids"));
                           if (arr.length == 0) return new JSONObject();
                           String op = a.getString("op");
                           switch (op) {
@@ -959,92 +1833,46 @@ jobs:
                               case "unread": f.setFlags(arr, new Flags(Flags.Flag.SEEN), false); break;
                               case "star": f.setFlags(arr, new Flags(Flags.Flag.FLAGGED), true); break;
                               case "unstar": f.setFlags(arr, new Flags(Flags.Flag.FLAGGED), false); break;
-                              case "move": {
-                                  IMAPFolder to = (IMAPFolder) store(acct).getFolder(a.getString("to"));
-                                  if (!to.exists()) to.create(Folder.HOLDS_MESSAGES);
-                                  if (store(acct).hasCapability("MOVE")) {
-                                      f.moveMessages(arr, to);
-                                  } else {
-                                      f.copyMessages(arr, to);
-                                      f.setFlags(arr, new Flags(Flags.Flag.DELETED), true);
-                                      try { f.expunge(arr); } catch (Exception e) { f.expunge(); }
-                                  }
-                                  break;
-                              }
+                              case "move": Mail.move(acct, f, arr, a.getString("to")); break;
+                              case "delete": Mail.deleteForever(f, arr); break;
                               default: throw new Exception("Unknown action " + op);
                           }
                           return new JSONObject();
                       }
+                      case "empty": {
+                          IMAPFolder f = Mail.folder(acct, a.getString("folder"));
+                          javax.mail.Message[] all = f.getMessages();
+                          JSONObject o = new JSONObject();
+                          o.put("deleted", all.length);
+                          if (all.length > 0) {
+                              f.setFlags(all, new Flags(Flags.Flag.DELETED), true);
+                              f.expunge();
+                          }
+                          return o;
+                      }
+                      case "snooze": {
+                          IMAPFolder f = Mail.folder(acct, a.getString("folder"));
+                          javax.mail.Message[] arr = byUids(f, a.getJSONArray("uids"));
+                          f.fetch(arr, Mail.listProfile());
+                          Mail.snooze(this, acct, f, arr, a.getLong("until"));
+                          CheckJob.scheduleNext(this);
+                          return new JSONObject();
+                      }
+                      case "wake": {
+                          JSONObject o = new JSONObject();
+                          o.put("woken", Mail.wake(this, acct, a.getString("mid"), true).size());
+                          CheckJob.scheduleNext(this);
+                          return o;
+                      }
+                      case "saveDraft":
+                          Mail.saveDraft(acct, a);
+                          return new JSONObject();
+                      case "deleteDraft":
+                          Mail.deleteDraft(acct, a.getString("folder"), a.getString("draftKey"));
+                          return new JSONObject();
                       default:
                           throw new Exception("Unknown method " + method);
                   }
-              }
-
-              private Object send(JSONObject a) throws Exception {
-                  Acct acct = acct(a);
-                  Properties pr = new Properties();
-                  pr.put("mail.smtp.host", acct.smtpHost);
-                  pr.put("mail.smtp.port", String.valueOf(acct.smtpPort));
-                  pr.put("mail.smtp.auth", "true");
-                  if ("starttls".equals(acct.smtpSec)) {
-                      pr.put("mail.smtp.starttls.enable", "true");
-                      pr.put("mail.smtp.starttls.required", "true");
-                  } else {
-                      pr.put("mail.smtp.ssl.enable", "true");
-                  }
-                  pr.put("mail.smtp.connectiontimeout", "15000");
-                  pr.put("mail.smtp.timeout", "60000");
-                  Session s = Session.getInstance(pr);
-                  MimeMessage mm = new MimeMessage(s);
-                  String name = a.optString("name", "");
-                  mm.setFrom(name.isEmpty() ? new InternetAddress(acct.email) : new InternetAddress(acct.email, name, "UTF-8"));
-                  mm.setRecipients(javax.mail.Message.RecipientType.TO, InternetAddress.parse(a.getString("to")));
-                  String cc = a.optString("cc", "").trim();
-                  if (!cc.isEmpty()) mm.setRecipients(javax.mail.Message.RecipientType.CC, InternetAddress.parse(cc));
-                  mm.setSubject(a.optString("subject", ""), "UTF-8");
-                  String inReply = a.optString("inReplyTo", "");
-                  if (!inReply.isEmpty()) {
-                      mm.setHeader("In-Reply-To", inReply);
-                      String refs = a.optString("references", "").trim();
-                      mm.setHeader("References", (refs.isEmpty() ? "" : refs + " ") + inReply);
-                  }
-                  JSONArray atts = a.optJSONArray("attachments");
-                  if (atts != null && atts.length() > 0) {
-                      MimeMultipart mp = new MimeMultipart();
-                      MimeBodyPart tp = new MimeBodyPart();
-                      tp.setText(a.optString("body", ""), "UTF-8");
-                      mp.addBodyPart(tp);
-                      for (int i = 0; i < atts.length(); i++) {
-                          JSONObject x = atts.getJSONObject(i);
-                          byte[] bytes = Base64.decode(x.getString("b64"), Base64.DEFAULT);
-                          MimeBodyPart ap = new MimeBodyPart();
-                          ap.setDataHandler(new DataHandler(new ByteArrayDataSource(bytes, x.optString("mime", "application/octet-stream"))));
-                          ap.setFileName(x.optString("name", "file"));
-                          mp.addBodyPart(ap);
-                      }
-                      mm.setContent(mp);
-                  } else {
-                      mm.setText(a.optString("body", ""), "UTF-8");
-                  }
-                  mm.setSentDate(new java.util.Date());
-                  mm.saveChanges();
-                  Transport.send(mm, acct.user, acct.pw);
-
-                  // Gmail files sent mail itself; other providers need a copy put in their Sent folder.
-                  if (!acct.gmail()) {
-                      String sent = a.optString("sentFolder", "");
-                      if (!sent.isEmpty()) {
-                          try {
-                              synchronized (acct) {
-                                  IMAPFolder f = (IMAPFolder) store(acct).getFolder(sent);
-                                  if (!f.exists()) f.create(Folder.HOLDS_MESSAGES);
-                                  mm.setFlag(Flags.Flag.SEEN, true);
-                                  f.appendMessages(new javax.mail.Message[]{mm});
-                              }
-                          } catch (Exception ignored) { }
-                      }
-                  }
-                  return new JSONObject();
               }
 
               private void reply(int id, boolean ok, String json) {
@@ -1058,14 +1886,32 @@ jobs:
                   return m == null ? e.getClass().getSimpleName() : m;
               }
 
+              private void askNotifyPermission() {
+                  if (Build.VERSION.SDK_INT >= 33
+                          && checkSelfPermission("android.permission.POST_NOTIFICATIONS") != PackageManager.PERMISSION_GRANTED) {
+                      requestPermissions(new String[]{"android.permission.POST_NOTIFICATIONS"}, REQ_NOTIFY);
+                  }
+              }
+
               private class Bridge {
                   @JavascriptInterface
                   public void call(int id, String method, String json) {
-                      ExecutorService pool = "send".equals(method) ? smtpPool : imapPool;
+                      ExecutorService pool = "send".equals(method) || "sendNow".equals(method) ? smtpPool : imapPool;
                       pool.execute(() -> {
                           try {
                               JSONObject args = json == null || json.isEmpty() ? new JSONObject() : new JSONObject(json);
-                              Object r = "send".equals(method) ? send(args) : run(method, args);
+                              Object r;
+                              if ("send".equals(method)) {
+                                  Mail.send(acct(args), args);
+                                  r = new JSONObject();
+                              } else if ("sendNow".equals(method)) {
+                                  String sid = args.getString("id");
+                                  JSONObject p = Mail.payload(MainActivity.this, sid);
+                                  Mail.send(acct(p), p);
+                                  Mail.unschedule(MainActivity.this, sid);
+                                  CheckJob.scheduleNext(MainActivity.this);
+                                  r = new JSONObject();
+                              } else r = run(method, args);
                               reply(id, true, r.toString());
                           } catch (Exception e) {
                               reply(id, false, JSONObject.quote(friendly(e)));
@@ -1074,9 +1920,7 @@ jobs:
                   }
 
                   @JavascriptInterface
-                  public void openUrl(String url) {
-                      runOnUiThread(() -> openExternal(url));
-                  }
+                  public void openUrl(String url) { runOnUiThread(() -> openExternal(url)); }
 
                   @JavascriptInterface
                   public String version() {
@@ -1086,6 +1930,112 @@ jobs:
                           return "";
                       }
                   }
+
+                  @JavascriptInterface
+                  public String takeLaunch() {
+                      String l = launch;
+                      launch = null;
+                      return l == null ? "" : l;
+                  }
+
+                  @JavascriptInterface
+                  public void setWidget(String json) {
+                      try {
+                          JSONObject o = new JSONObject(json);
+                          o.put("t", System.currentTimeMillis());
+                          Acct.put(MainActivity.this, "widget", o);
+                          BriskWidget.updateAll(MainActivity.this);
+                      } catch (Exception ignored) { }
+                  }
+
+                  @JavascriptInterface
+                  public void setTextZoom(int z) {
+                      Acct.prefs(MainActivity.this).edit().putInt("textZoom", z).apply();
+                      runOnUiThread(() -> web.getSettings().setTextZoom(z));
+                  }
+
+                  @JavascriptInterface
+                  public String setLock(boolean on) {
+                      if (on) {
+                          KeyguardManager km = getSystemService(KeyguardManager.class);
+                          if (km == null || !km.isDeviceSecure()) return "Set a screen lock (PIN, pattern or fingerprint) on your phone first.";
+                      }
+                      Acct.prefs(MainActivity.this).edit().putBoolean("lock", on).apply();
+                      if (on) { unlocked = true; pausedAt = System.currentTimeMillis(); }
+                      return "";
+                  }
+
+                  @JavascriptInterface
+                  public void addEvent(String title, long begin, long end, boolean allDay, String desc) {
+                      runOnUiThread(() -> {
+                          try {
+                              Intent i = new Intent(Intent.ACTION_INSERT).setData(CalendarContract.Events.CONTENT_URI)
+                                      .putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, begin)
+                                      .putExtra(CalendarContract.EXTRA_EVENT_END_TIME, end)
+                                      .putExtra(CalendarContract.EXTRA_EVENT_ALL_DAY, allDay)
+                                      .putExtra(CalendarContract.Events.TITLE, title)
+                                      .putExtra(CalendarContract.Events.DESCRIPTION, desc);
+                              startActivity(i);
+                          } catch (Exception ignored) { }
+                      });
+                  }
+
+                  @JavascriptInterface
+                  public void cancelNotify(String acctId, long uid) {
+                      NotificationManager nm = getSystemService(NotificationManager.class);
+                      if (nm != null) nm.cancel((acctId + uid).hashCode());
+                  }
+
+                  @JavascriptInterface
+                  public void checkNow() {
+                      new Thread(() -> CheckJob.work(getApplicationContext())).start();
+                  }
+              }
+          }
+          BRISK_EOF
+          mkdir -p android/app/src/main/java/com/daveg27/brisk
+          cat > android/app/src/main/java/com/daveg27/brisk/NotifyAction.java <<'BRISK_EOF'
+          package com.daveg27.brisk;
+
+          import android.app.NotificationManager;
+          import android.content.BroadcastReceiver;
+          import android.content.Context;
+          import android.content.Intent;
+
+          import javax.mail.Flags;
+          import javax.mail.Message;
+
+          import com.sun.mail.imap.IMAPFolder;
+
+          /** Archive / Delete / Mark read buttons on a new-mail notification. */
+          public class NotifyAction extends BroadcastReceiver {
+              @Override
+              public void onReceive(Context ctx, Intent in) {
+                  final Context c = ctx.getApplicationContext();
+                  final String acctId = in.getStringExtra("acct"), folder = in.getStringExtra("folder"), op = in.getStringExtra("op");
+                  final long uid = in.getLongExtra("uid", -1);
+                  final int nid = in.getIntExtra("nid", 0);
+                  NotificationManager nm = c.getSystemService(NotificationManager.class);
+                  if (nm != null) nm.cancel(nid);
+                  final PendingResult pr = goAsync();
+                  new Thread(() -> {
+                      Acct a = null;
+                      try {
+                          a = CheckJob.find(Acct.loadAll(c), acctId);
+                          if (a == null || folder == null || uid < 0) return;
+                          IMAPFolder f = Mail.folder(a, folder);
+                          Message m = f.getMessageByUID(uid);
+                          if (m == null) return;
+                          Message[] arr = new Message[]{m};
+                          if ("read".equals(op)) f.setFlags(arr, new Flags(Flags.Flag.SEEN), true);
+                          else if ("archive".equals(op)) Mail.move(a, f, arr, Mail.special(a, "archive", "Archive"));
+                          else if ("trash".equals(op)) Mail.move(a, f, arr, Mail.special(a, "trash", "Trash"));
+                      } catch (Exception ignored) {
+                      } finally {
+                          if (a != null) Mail.closeAll(a);
+                          pr.finish();
+                      }
+                  }).start();
               }
           }
           BRISK_EOF

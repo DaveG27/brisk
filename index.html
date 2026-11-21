@@ -176,6 +176,43 @@ svg.i{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke
 .row.picked{background:var(--sel)}.row.picked .ck{background:#2e8bd6;border-color:#2e8bd6;color:#fff}
 #app.picking .row.unread .from::before{display:none}
 .stat .acts{display:flex;gap:4px;align-items:center}
+#sheet{position:fixed;inset:0;background:var(--bg);z-index:12;display:flex;flex-direction:column}
+#sheet .sbody{flex:1;overflow-y:auto;padding:14px 16px 40px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:10px;display:block;width:100%;text-align:left;min-height:0}
+.card .top2{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+.card .big{font-size:22px;font-weight:600;white-space:nowrap}
+.card small{color:var(--mute);font-size:13px}.card .top2>small:last-child{white-space:nowrap}
+.card .pill{display:inline-block;font-size:12px;font-weight:700;border-radius:999px;padding:1px 8px;color:#fff}
+.tabs{display:flex;gap:6px;margin-bottom:12px}
+.sumline{font-size:15px;color:var(--mute);margin:0 0 12px}
+.sumline b{color:var(--ink);font-size:20px}
+.srow{display:flex;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px}
+.srow .grow{flex:1;min-width:0}
+.srow .grow b,.srow .grow small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.srow .grow small{color:var(--mute);font-size:13px}
+.srow button{border:1px solid var(--line);padding:0 10px;min-height:36px;font-size:13px;background:var(--panel);flex:none}
+.srow button.dang{color:var(--pink);border-color:var(--pink)}
+.count{display:inline-grid;place-items:center;min-width:20px;height:18px;padding:0 5px;border-radius:9px;background:var(--hover);color:var(--mute);font-size:12px;font-weight:700;margin-left:6px;vertical-align:1px}
+.vip{background:#e8a200;color:#fff;font-size:11px;font-weight:700;border-radius:4px;padding:0 5px;margin-right:6px;vertical-align:1px}
+.sect{font-size:12.5px;font-weight:700;color:var(--mute);padding:8px 14px 4px;background:var(--bg)}
+.banner{display:flex;align-items:center;gap:10px;margin:8px 10px;padding:10px 12px;border-radius:12px;background:var(--sel);font-size:14px;width:calc(100% - 20px);text-align:left;min-height:0}
+.banner b{flex:1}
+.thr{background:var(--panel);border:1px solid var(--line);border-radius:12px;margin-bottom:10px;overflow:hidden}
+.thr .th{display:flex;gap:10px;align-items:center;padding:10px 12px;width:100%;text-align:left;border-radius:0;min-height:0}
+.thr .th .av{width:32px;height:32px;font-size:14px;flex:none}
+.thr .th .who2{flex:1;min-width:0}
+.thr .th .who2 b,.thr .th .who2 small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.thr .th .who2 small{color:var(--mute);font-size:13px}
+.thr .tb2{padding:0 12px 12px}
+.thr.me{border-left:3px solid var(--sky)}
+.factb{font-size:13px;background:var(--hover);border-radius:6px;padding:2px 8px;white-space:nowrap;min-height:28px;border:1px dashed var(--sky)}
+.snzline{font-size:13px;color:#d98a00;font-weight:600;margin-left:6px}
+.optlist{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+.optlist button{border:1px solid var(--line);text-align:left;padding:8px 12px;display:flex;justify-content:space-between;gap:10px;min-height:46px;background:var(--panel)}
+.optlist button small{color:var(--mute)}
+.dlgin{width:100%;height:46px;border:1px solid var(--line);border-radius:10px;background:var(--bg);padding:0 10px;margin-bottom:12px}
+.set .row2{display:flex;gap:8px;align-items:center;justify-content:space-between;min-height:40px}
+.set .row2 select{width:auto;max-width:60%}
 @media(min-width:900px){
  body{display:grid;grid-template-columns:minmax(360px,440px) minmax(0,1fr)}
  #app{border-right:1px solid var(--line)}
@@ -207,6 +244,13 @@ svg.i{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke
  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10zM12 8v4M12 16h.01"/></symbol>
  <symbol id="i-spam" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M4.9 4.9l14.2 14.2"/></symbol>
  <symbol id="i-inbox" viewBox="0 0 24 24"><path d="M22 12h-6l-2 3h-4l-2-3H2M5.5 5h13L22 12v7H2v-7z"/></symbol>
+ <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+ <symbol id="i-tpl" viewBox="0 0 24 24"><path d="M14 2H6v20h12V6zM14 2v4h4M8 13h8M8 17h6"/></symbol>
+ <symbol id="i-box" viewBox="0 0 24 24"><path d="M21 8l-9-5-9 5v8l9 5 9-5zM3 8l9 5 9-5M12 13v8"/></symbol>
+ <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z"/></symbol>
+ <symbol id="i-cal" viewBox="0 0 24 24"><path d="M3 4h18v18H3zM16 2v4M8 2v4M3 10h18"/></symbol>
+ <symbol id="i-bin2" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11l4 4M14 11l-4 4"/></symbol>
+ <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></symbol>
 </svg>
 
 <!-- add account -->
@@ -248,11 +292,12 @@ svg.i{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke
   <button class="txt" data-bulk="all" id="selall">All</button>
   <button class="ib" data-bulk="read" aria-label="Mark read or unread" title="Read / unread"><svg class="i"><use href="#i-mail"/></svg></button>
   <button class="ib" data-bulk="star" aria-label="Star" title="Star"><svg class="i"><use href="#i-star"/></svg></button>
+  <button class="ib" data-bulk="snooze" aria-label="Snooze" title="Snooze"><svg class="i"><use href="#i-clock"/></svg></button>
   <button class="ib" data-bulk="archive" aria-label="Archive" title="Archive"><svg class="i"><use href="#i-archive"/></svg></button>
   <button class="ib" data-bulk="trash" aria-label="Delete" title="Delete"><svg class="i"><use href="#i-trash"/></svg></button>
  </div>
  <div class="chips" id="chips"></div>
- <div class="stat"><span id="stat"></span><span class="acts"><button id="selbtn">Select</button><button id="refresh" aria-label="Refresh"><svg class="i"><use href="#i-refresh"/></svg></button></span></div>
+ <div class="stat"><span id="stat"></span><span class="acts"><button id="emptybtn" class="hide" style="color:var(--pink)">Empty</button><button id="selbtn">Select</button><button id="refresh" aria-label="Refresh"><svg class="i"><use href="#i-refresh"/></svg></button></span></div>
  <div id="rows" role="list"></div>
  <button class="fab" id="fab"><svg class="i"><use href="#i-pen"/></svg>Compose</button>
 </div>
@@ -260,12 +305,19 @@ svg.i{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke
 <div class="scrim hide" id="scrim"></div>
 <nav id="drawer" aria-label="Accounts, folders and settings"></nav>
 <section id="reader" aria-label="Email"></section>
+<section id="sheet" class="hide" aria-label="Panel">
+ <div class="rbar"><button class="ib" id="sheetx" aria-label="Close"><svg class="i"><use href="#i-back"/></svg></button><b id="sheett" style="flex:1"></b><span id="sheeta"></span></div>
+ <div class="sbody" id="sheetb"></div>
+</section>
 
 <section id="compose" aria-label="Compose">
  <div class="rbar">
   <button class="ib" id="cclose" aria-label="Close"><svg class="i"><use href="#i-close"/></svg></button>
-  <b id="ctitle" style="flex:1">New message</b>
+  <b id="ctitle" style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">New message</b>
+  <button class="ib" id="cdiscard" aria-label="Discard draft" title="Discard draft"><svg class="i"><use href="#i-trash"/></svg></button>
+  <button class="ib" id="ctpl" aria-label="Templates" title="Templates"><svg class="i"><use href="#i-tpl"/></svg></button>
   <label class="ib" aria-label="Attach file" style="cursor:pointer"><svg class="i"><use href="#i-clip"/></svg><input type="file" id="cfile" multiple class="hide"></label>
+  <button class="ib" id="clater" aria-label="Send later" title="Send later"><svg class="i"><use href="#i-clock"/></svg></button>
   <button class="send" id="csend"><svg class="i"><use href="#i-send"/></svg>Send</button>
  </div>
  <div class="cbody">
@@ -367,8 +419,14 @@ function classify(m) {
 const VIEWS = [['inbox','Inbox','inbox'],['starred','Starred','star'],['important','Important','shield'],['sent','Sent','send'],['drafts','Drafts','pen'],['archive','Archive','archive'],['all','All mail','archive'],['spam','Spam','spam'],['trash','Bin','trash']];
 const S = {accounts:[], folders:{}, acct:'all', view:'inbox', src:[], items:[], more:false, filter:null, sel:null, query:'', server:null, sbusy:0, cur:null, loading:false, showImg:false, plain:false};
 let cache = ls.get('brisk-cache2', {});
-let settings = ls.get('brisk-settings', {name:'', sig:'', images:false});
+let settings = Object.assign({name:'', sig:'', images:false, theme:'system', zoom:100, swipeL:'trash', swipeR:'archive', threads:true, notify:true, vipOnly:false, lock:false, undoSecs:10}, ls.get('brisk-settings', {}));
 let trusted = new Set(ls.get('brisk-trusted', []));
+let vips = new Set(ls.get('brisk-vips', []));
+let templates = ls.get('brisk-templates', [{name:'Thanks, received', text:'Thanks, I’ve got this and will get back to you shortly.'}, {name:'Running late', text:'Sorry, I’m running about 10 minutes late. I’ll be with you shortly.'}, {name:'Call me', text:'Easier to chat this through. Could you give me a call when you’re free?'}]);
+const saveSettings = () => ls.set('brisk-settings', settings);
+const isVip = m => vips.has((m.email || '').toLowerCase());
+const normSubj = t => (t || '').toLowerCase().replace(/^\s*((re|fw|fwd|aw|sv)\s*(\[\d+\])?\s*:\s*)+/i, '').replace(/\s+/g, ' ').trim();
+S.groups = new Map(); S.snz = new Map(); S.extra = null; S.thread = null;
 const key = m => m.acct + '|' + m.folder + '|' + m.uid;
 const ck = (acct, path) => acct + '|' + path;
 const isWide = () => matchMedia('(min-width:900px)').matches;
@@ -460,16 +518,18 @@ function fmt(t) {
   return d.toLocaleDateString('en-GB');
 }
 let shown = [];
-function rowHtml(m, hits) {
+function rowHtml(m, hits, grp) {
   const L = LABELS[m.label] || LABELS.work, sp = spOf(m.acct);
+  const g = grp && grp.length > 1 ? grp : null, unread = g ? g.some(x => !x.seen) : !m.seen, star = g ? g.some(x => x.star) : m.star;
+  const until = S.snz.get(m.mid);
   const who = m.folder === sp.sent || m.folder === sp.drafts ? 'To: ' + (m.to || '') : m.from;
   const a = accById(m.acct);
   const badge = multi() && (S.acct === 'all' || S.query) && a ? `<span class="abadge" style="background:${acol(m.acct)}" title="${esc(a.email)}">${esc(({gmail:'G',virgin:'V',yahoo:'Y',icloud:'i'})[a.provider] || a.email[0].toUpperCase())}</span>` : '';
   return `<div class="rw" data-k="${esc(key(m))}"><div class="under"><span>${ico('archive')}</span><span>${ico('trash')}</span></div>
-  <div class="row ${m.seen ? '' : 'unread'} ${S.sel === key(m) && !S.pick ? 'sel' : ''} ${picked.has(key(m)) ? 'picked' : ''}" role="listitem" tabindex="0"${S.pick ? ` aria-selected="${picked.has(key(m))}"` : ''}>
+  <div class="row ${unread ? 'unread' : ''} ${S.sel === key(m) && !S.pick ? 'sel' : ''} ${picked.has(key(m)) ? 'picked' : ''}" role="listitem" tabindex="0"${S.pick ? ` aria-selected="${picked.has(key(m))}"` : ''}>
    <span class="bar" style="background:${L.c}"></span>
-   <span class="from">${S.pick ? '<span class="ck">✓</span>' : ''}${hl(who, hits)}</span>
-   <span class="time">${m.star ? `<span class="star">★</span>` : ''}${m.att ? ico('clip') : ''}${fmt(m.t)}${badge}</span>
+   <span class="from">${S.pick ? '<span class="ck">✓</span>' : ''}${isVip(m) ? '<span class="vip">VIP</span>' : ''}${hl(who, hits)}${g ? `<span class="count">${g.length}</span>` : ''}</span>
+   <span class="time">${star ? `<span class="star">★</span>` : ''}${m.att ? ico('clip') : ''}${until ? `<span class="snzline">⏰ ${esc(whenText(until))}</span>` : fmt(m.t)}${badge}</span>
    <span class="subj"><span class="tag" style="background:${L.c}">${L.name}</span>${hl(m.subj, hits)}</span>
    <span class="snip">${hl(m.snip || ' ', hits)}</span></div></div>`;
 }
@@ -478,6 +538,7 @@ function renderChips() {
     Object.entries(LABELS).map(([k, L]) => `<button class="chip ${S.filter === k ? 'on' : ''}" data-l="${k}"><span class="dot" style="background:${L.c}"></span>${L.name}</button>`).join('');
 }
 function viewTitle() {
+  if (S.view === 'snoozed') return 'Snoozed';
   if (S.acct === 'all') return multi() ? 'All inboxes' : 'Inbox';
   const v = VIEWS.find(x => x[0] === S.view), a = accById(S.acct);
   const name = S.view === 'label' ? S.src[0].path.replace(/^\[(Gmail|Google Mail)\]\//, '') : v ? v[1] : '';
@@ -498,8 +559,23 @@ function renderList() {
     stat = `${local.length} instant (${ms} ms)` + (DEMO ? '' : S.sbusy ? ` · searching ${multi() ? 'all accounts' : 'the server'}…` : S.server ? ` · ${server.length} more from the server` : '');
     if (!shown.length && !S.sbusy) html = `<div class="empty">Nothing matches “${esc(S.query)}”.<br>Try fewer words, or remove an operator.</div>`;
   } else {
-    shown = S.filter ? S.items.filter(m => m.label === S.filter) : S.items;
-    html = shown.map(m => rowHtml(m)).join('');
+    let base = S.filter ? S.items.filter(m => m.label === S.filter) : S.items;
+    S.groups = new Map();
+    let leads = base;
+    if (settings.threads && S.view !== 'snoozed') {
+      const byT = new Map(); leads = [];
+      for (const m of base) {
+        const ns = normSubj(m.subj), tk = m.acct + '|' + m.folder + '|' + ns;
+        if (!ns || ns === '(no subject)') { leads.push(m); continue; }
+        if (byT.has(tk)) byT.get(tk).push(m); else { const arr = [m]; byT.set(tk, arr); leads.push(m); S.groups.set(key(m), arr); }
+      }
+    }
+    const inboxy = S.view === 'inbox';
+    const vipRows = inboxy && vips.size ? leads.filter(m => isVip(m) && membersOf(m).some(x => !x.seen)) : [];
+    const rest = vipRows.length ? leads.filter(m => !vipRows.includes(m)) : leads;
+    shown = vipRows.concat(rest);
+    html = (vipRows.length ? `<div class="sect">VIP</div>` + vipRows.map(m => rowHtml(m, null, S.groups.get(key(m)))).join('') + `<div class="sect">Everything else</div>` : '') + rest.map(m => rowHtml(m, null, S.groups.get(key(m)))).join('');
+    if (inboxy && !S.filter && !S.pick) html = cleanupBanner() + html;
     if (!shown.length) html = `<div class="empty">${S.loading ? 'Loading…' : S.filter ? 'No ' + LABELS[S.filter].name.toLowerCase() + ' here.' : 'All clear. Nothing here.'}</div>`;
     else if (S.more) html += `<button class="more" id="more">Load older emails</button>`;
     const unread = S.items.filter(m => !m.seen).length;
@@ -507,11 +583,17 @@ function renderList() {
   }
   $('rows').innerHTML = html;
   $('stat').textContent = stat;
+  const binView = !S.query && S.acct !== 'all' && (S.view === 'trash' || S.view === 'spam');
+  $('emptybtn').classList.toggle('hide', !binView || !S.items.length);
+  $('emptybtn').textContent = S.view === 'spam' ? 'Empty Spam' : 'Empty Bin';
 }
+function membersOf(m) { return (S.groups && S.groups.get(key(m))) || [m]; }
+function expand(items) { const out = [], seen = new Set(); for (const m of items) for (const x of membersOf(m)) if (!seen.has(key(x))) { seen.add(key(x)); out.push(x); } return out; }
 
 /* ================= loading ================= */
 const PAGE = 40;
 function sources() {
+  if (S.view === 'snoozed') return S.accounts.map(a => ({acct: a.id, path: 'Brisk Snoozed'}));
   if (S.acct === 'all') return S.accounts.map(a => ({acct: a.id, path: 'INBOX'}));
   return S.src;
 }
@@ -535,6 +617,20 @@ async function loadView(reset) {
   S.items = items; S.more = src.some(s => s.loaded < s.total);
   saveCache(); S.loading = false; renderList();
   src.forEach(s => snippets(s.acct, s.path, cache[ck(s.acct, s.path)] || []));
+  if (S.view === 'inbox' && (S.acct === 'all' || !multi())) feedWidget();
+  if (S.view === 'snoozed') loadSnoozes();
+}
+function feedWidget() {
+  if (DEMO) return;
+  try { N.setWidget(JSON.stringify({unread: S.items.filter(m => !m.seen).length, items: S.items.slice(0, 4).map(m => ({from: m.from, subj: m.subj, seen: m.seen}))})); } catch (e) {}
+}
+async function loadSnoozes() {
+  try { const r = await call('snoozes'); S.snz = new Map(r.items.map(e => [e.mid, e.until])); renderList(); } catch (e) {}
+}
+let lastWake = 0;
+async function wakeDue() {
+  if (Date.now() - lastWake < 60000) return; lastWake = Date.now();
+  try { const r = await call('wakeDue'); if (r.woken) { toast(`${r.woken} snoozed email${r.woken > 1 ? 's are' : ' is'} back`); for (const a of S.accounts) delete cache[ck(a.id, 'INBOX')]; if (S.view === 'inbox') loadView(false); } } catch (e) {}
 }
 async function loadMore() {
   const src = S.src;
@@ -566,10 +662,11 @@ async function snippets(acct, path, items) {
 
 /* ================= actions with undo ================= */
 let pending = null, tt;
-function toast(msg, undo) {
-  $('tmsg').textContent = msg; $('undo').classList.toggle('hide', !undo);
+let undoCb = null;
+function toast(msg, undo, ms, cb) {
+  $('tmsg').textContent = msg; $('undo').classList.toggle('hide', !undo); undoCb = cb || null;
   $('toast').classList.add('show'); clearTimeout(tt);
-  tt = setTimeout(() => { $('toast').classList.remove('show'); }, undo ? 4500 : 3200);
+  tt = setTimeout(() => { $('toast').classList.remove('show'); undoCb = null; }, ms || (undo ? 4500 : 3200));
 }
 function targetFor(op, acct) {
   const sp = spOf(acct), a = accById(acct);
@@ -618,11 +715,11 @@ function flag(m, op) {
   call('act', {acct: m.acct, folder: m.folder, uids: [m.uid], op}).catch(e => toast(e.message));
   saveCache();
 }
-$('undo').onclick = () => { if (pending) { clearTimeout(pending.timer); pending.undo(); pending = null; } $('toast').classList.remove('show'); };
-document.addEventListener('visibilitychange', () => { if (document.hidden) flush(); });
+$('undo').onclick = () => { if (undoCb) { const f = undoCb; undoCb = null; f(); } else if (pending) { clearTimeout(pending.timer); pending.undo(); pending = null; } $('toast').classList.remove('show'); };
+document.addEventListener('visibilitychange', () => { if (document.hidden) { flush(); flushSend(); if ($('compose').classList.contains('open') && C.dirty) { C.dirty = false; serverDraft(payload()); } } });
 
 /* ================= reader ================= */
-const byKey = k => shown.find(m => key(m) === k) || S.items.find(m => key(m) === k) || (S.server || []).find(m => key(m) === k);
+const byKey = k => shown.find(m => key(m) === k) || S.items.find(m => key(m) === k) || (S.server || []).find(m => key(m) === k) || (S.extra && key(S.extra) === k ? S.extra : null) || (S.thread ? S.thread.items.find(m => key(m) === k) : null);
 function tldr(text) {
   const lines = (text || '').split('\n').map(l => l.trim()).filter(l => l && !/^(hi|hello|hey|dear|morning|afternoon|good (morning|afternoon|evening))\b[^.!?]{0,30}[,!]?$/i.test(l) && !/^>/.test(l));
   const s = lines.join(' ').split(/(?<=[.?!])\s+/).find(x => x.length > 18) || lines[0] || '';
@@ -657,58 +754,104 @@ function emailDoc(html, showImg) {
   return {blocked, doc: `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><base target="_blank"><style>html,body{margin:0;padding:6px;background:#fff;color:#111;font:15px/1.5 system-ui,sans-serif;overflow-wrap:anywhere}img{max-width:100%!important;height:auto!important}img[src=""]{display:none}table{max-width:100%!important}pre{white-space:pre-wrap}</style></head><body>${h}</body></html>`};
 }
 function openMail(m) {
-  S.sel = key(m); S.cur = null; S.plain = false; S.showImg = settings.images || trusted.has(m.email);
+  const sp = spOf(m.acct);
+  if (sp.drafts && m.folder === sp.drafts) return openDraft(m);
+  S.sel = key(m); S.cur = null; S.plain = false; S.showImg = settings.images || trusted.has(m.email); S.thread = null;
+  if (!shown.includes(m) && !S.items.includes(m)) S.extra = m;
+  const grp = membersOf(m);
+  const ns = normSubj(m.subj);
+  const sentExtra = settings.threads && ns && sp.sent && m.folder !== sp.sent ? (cache[ck(m.acct, sp.sent)] || []).filter(x => normSubj(x.subj) === ns) : [];
+  if (grp.length > 1 || sentExtra.length) {
+    const items = grp.concat(sentExtra).sort((a, b) => a.t - b.t);
+    const newest = grp[0];
+    S.thread = {lead: key(m), items, open: new Set([key(newest)]), bodies: {}, newest: key(newest)};
+    const unseen = grp.filter(x => !x.seen);
+    if (unseen.length) { flagMany(unseen, 'read'); }
+    loadThreadBody(newest);
+  }
   if (!m.seen) { m.seen = true; saveCache(); }
+  if (!DEMO) try { N.cancelNotify(m.acct, m.uid); } catch (e) {}
   renderList(); renderReader();
   $('reader').classList.add('open');
+  if (S.thread) return;
   const k = key(m);
   call('body', {acct: m.acct, folder: m.folder, uid: m.uid}).then(b => {
     if (S.sel !== k) return;
-    S.cur = b; if (!m.snip) { m.snip = (b.text || '').replace(/\s+/g, ' ').slice(0, 600); saveCache(); }
+    S.cur = b; if (S.extra === m) Object.assign(m, {from: b.from, email: b.email, subj: b.subj, t: b.t, mid: b.mid, label: classify(Object.assign({}, m, b))});
+    if (!m.snip) { m.snip = (b.text || '').replace(/\s+/g, ' ').slice(0, 600); saveCache(); }
     renderReader();
   }).catch(e => { if (S.sel === k) { S.cur = {error: e.message}; renderReader(); } });
 }
-function closeReader() { S.sel = null; S.cur = null; $('reader').classList.remove('open'); renderList(); if (isWide()) renderReader(); }
+function loadThreadBody(m) {
+  const T = S.thread, k = key(m);
+  if (!T || T.bodies[k]) return;
+  T.bodies[k] = 'loading';
+  call('body', {acct: m.acct, folder: m.folder, uid: m.uid}).then(b => { if (S.thread === T) { T.bodies[k] = b; if (k === T.newest) S.cur = b; renderReader(); } })
+    .catch(e => { if (S.thread === T) { T.bodies[k] = {error: e.message}; renderReader(); } });
+}
+function closeReader() { S.sel = null; S.cur = null; S.thread = null; S.extra = null; $('reader').classList.remove('open'); renderList(); if (isWide()) renderReader(); }
+let frameN = 0;
+function bodyHtml(b, m) {
+  if (!b || b === 'loading') return `<div class="loading">Loading…</div>`;
+  if (b.error) return `<div class="empty">Couldn’t open this email.<br>${esc(b.error)}</div>`;
+  if (b.html && !S.plain) {
+    const d = emailDoc(b.html, S.showImg || trusted.has(m.email)), id = 'frame' + (++frameN);
+    setTimeout(() => mountFrame(d.doc, id), 0);
+    return `<div class="imgbar">${d.blocked && !S.showImg ? `<span>${d.blocked} remote image${d.blocked > 1 ? 's' : ''} hidden to block trackers</span><button data-a="img">Show</button><button data-a="trust">Always for this sender</button>` : ''}<button data-a="plain">Plain text</button></div><iframe class="frame" id="${id}" sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox" title="Email content"></iframe>`;
+  }
+  return `${b.html ? `<div class="imgbar"><button data-a="plain">Original layout</button></div>` : ''}<div class="text">${linkify(esc(b.text || '(empty)'))}</div>`;
+}
+function attsHtml(b) {
+  return b && b.attachments && b.attachments.length ? `<div class="atts">${b.attachments.map(x => `<button class="att" data-att="${x.idx}" data-k="${esc(key(b))}">${ico('clip')}<span>${esc(x.name)}</span><small style="color:var(--mute)">${x.size ? Math.max(1, Math.round(x.size / 1024 * .75)) + ' KB' : ''}</small></button>`).join('')}</div>` : '';
+}
+function factsHtml(subj, text) {
+  const fx = facts((subj || '') + '\n' + (text || ''));
+  return fx.length ? `<div class="facts">${fx.map(x => x.startsWith('📅') ? `<button class="factb" data-cal="${esc(x.slice(2).trim())}" title="Add to calendar">${esc(x)} +</button>` : `<span class="fact">${esc(x)}</span>`).join('')}</div>` : '';
+}
 function renderReader() {
   const r = $('reader'), m = S.sel && byKey(S.sel);
   if (!m) {
     r.innerHTML = `<div class="rbody"><div class="empty" style="margin-top:14vh"><h2 style="font-weight:300;font-size:30px;color:var(--ink);margin:0 0 6px">Inbox, under control.</h2>Pick an email to read it.<br>Press <b>c</b> to write or <b>/</b> to search.</div></div>`;
     return;
   }
-  const L = LABELS[m.label] || LABELS.work, b = S.cur, text = b && !b.error ? b.text : m.snip, sp = spOf(m.acct), a = accById(m.acct);
-  const fx = facts((m.subj || '') + '\n' + (text || '')), warn = scam(m);
-  let content;
-  if (!b) content = `<div class="loading">Loading…</div>`;
-  else if (b.error) content = `<div class="empty">Couldn’t open this email.<br>${esc(b.error)}</div>`;
-  else if (b.html && !S.plain) {
-    const d = emailDoc(b.html, S.showImg);
-    content = `<div class="imgbar">${d.blocked && !S.showImg ? `<span>${d.blocked} remote image${d.blocked > 1 ? 's' : ''} hidden to block trackers</span><button data-a="img">Show</button><button data-a="trust">Always for this sender</button>` : ''}<button data-a="plain">Plain text</button></div><iframe class="frame" id="frame" sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox" title="Email content"></iframe>`;
-    setTimeout(() => mountFrame(d.doc), 0);
-  } else content = `${b.html ? `<div class="imgbar"><button data-a="plain">Original layout</button></div>` : ''}<div class="text">${linkify(esc(b.text || '(empty)'))}</div>`;
-  const atts = b && b.attachments && b.attachments.length ? `<div class="atts">${b.attachments.map(x => `<button class="att" data-att="${x.idx}">${ico('clip')}<span>${esc(x.name)}</span><small style="color:var(--mute)">${x.size ? Math.max(1, Math.round(x.size / 1024 * .75)) + ' KB' : ''}</small></button>`).join('')}</div>` : '';
-  const quick = !warn && m.folder !== sp.sent && (QUICK[m.label] || []).length ? `<div class="quick">${QUICK[m.label].map(q => `<button data-qr="${esc(q)}">${esc(q)}</button>`).join('')}</div>` : '';
-  const unsub = b && b.unsub ? `<button class="chip" data-a="unsub" style="margin-top:16px">Unsubscribe from ${esc(m.from)}</button>` : '';
-  const inTrash = m.folder === sp.trash || m.folder === sp.spam;
+  const L = LABELS[m.label] || LABELS.work, sp = spOf(m.acct), a = accById(m.acct), T = S.thread;
+  const b = T ? T.bodies[T.newest] : S.cur, bOk = b && b !== 'loading' && !b.error;
+  const text = bOk ? b.text : m.snip, warn = scam(m);
+  const inTrash = m.folder === sp.trash || m.folder === sp.spam, inSnooze = m.folder === 'Brisk Snoozed';
   const archived = m.folder === targetFor('archive', m.acct);
+  let content;
+  if (T) {
+    content = T.items.map(x => {
+      const k = key(x), open = T.open.has(k), me = x.folder === sp.sent, xb = T.bodies[k];
+      const xL = LABELS[x.label] || LABELS.work;
+      return `<div class="thr ${me ? 'me' : ''}"><button class="th" data-thr="${esc(k)}"><span class="av" style="background:${me ? 'var(--sky)' : xL.c};color:${me ? 'var(--rail)' : '#fff'}">${esc((me ? 'Me' : x.from || '?').trim()[0].toUpperCase())}</span><span class="who2"><b>${esc(me ? 'You' : x.from)}</b><small>${open ? esc(x.email) + ' · ' : esc((x.snip || '').slice(0, 80)) + ' · '}${fmt(x.t)}</small></span></button>${open ? `<div class="tb2">${bodyHtml(xb, x)}${attsHtml(xb && xb !== 'loading' ? xb : null)}</div>` : ''}</div>`;
+    }).join('');
+  } else content = bodyHtml(b, m) + attsHtml(bOk ? b : null);
+  const quick = !warn && m.folder !== sp.sent && (QUICK[m.label] || []).length ? `<div class="quick">${QUICK[m.label].map(q => `<button data-qr="${esc(q)}">${esc(q)}</button>`).join('')}</div>` : '';
+  const unsub = bOk && b.unsub ? `<button class="chip" data-a="unsub" style="margin-top:16px">Unsubscribe from ${esc(m.from)}</button>` : '';
+  const until = S.snz.get(m.mid);
   r.innerHTML = `<div class="rbar">
     <button class="ib back" data-a="back" aria-label="Back">${ico('back')}</button><span class="sp"></span>
-    ${inTrash ? `<button class="ib" data-a="inbox" aria-label="Move to Inbox" title="Move to Inbox">${ico('inbox')}</button>` : `${archived ? '' : `<button class="ib" data-a="archive" aria-label="Archive" title="Archive (e)">${ico('archive')}</button>`}<button class="ib" data-a="trash" aria-label="Delete" title="Delete (#)">${ico('trash')}</button>${sp.spam ? `<button class="ib" data-a="spam" aria-label="Report spam" title="Spam">${ico('spam')}</button>` : ''}`}
+    ${inTrash ? `<button class="ib" data-a="inbox" aria-label="Move to Inbox" title="Move to Inbox">${ico('inbox')}</button><button class="ib" data-a="forever" aria-label="Delete forever" title="Delete forever" style="color:var(--pink)">${ico('bin2')}</button>`
+      : inSnooze ? `<button class="ib" data-a="wake" aria-label="Unsnooze now" title="Unsnooze now">${ico('inbox')}</button>`
+      : `${archived ? '' : `<button class="ib" data-a="archive" aria-label="Archive" title="Archive (e)">${ico('archive')}</button>`}<button class="ib" data-a="trash" aria-label="Delete" title="Delete (#)">${ico('trash')}</button><button class="ib" data-a="snooze" aria-label="Snooze" title="Snooze (z)">${ico('clock')}</button>${sp.spam ? `<button class="ib" data-a="spam" aria-label="Report spam" title="Spam">${ico('spam')}</button>` : ''}`}
     <button class="ib" data-a="unread" aria-label="Mark unread" title="Mark unread (u)">${ico('mail')}</button>
     <button class="ib" data-a="star" aria-label="${m.star ? 'Unstar' : 'Star'}" title="Star (s)" style="${m.star ? 'color:#e8a200' : ''}">${ico('star')}</button></div>
    <div class="rbody">
-    <button class="tagbtn" data-a="recolour" title="Change colour"><span class="tag" style="background:${L.c}">${L.name} ▾</span></button>${multi() && a ? `<span class="acctline"><span class="dot" style="background:${acol(m.acct)}"></span>${esc(a.email)}</span>` : ''}
-    <h1>${esc(m.subj)}</h1>
+    <button class="tagbtn" data-a="recolour" title="Change colour"><span class="tag" style="background:${L.c}">${L.name} ▾</span></button>${multi() && a ? `<span class="acctline"><span class="dot" style="background:${acol(m.acct)}"></span>${esc(a.email)}</span>` : ''}${until ? `<span class="snzline">⏰ Back ${esc(whenText(until))}</span>` : ''}
+    <h1>${esc(m.subj)}${T ? `<span class="count" style="font-size:14px">${T.items.length}</span>` : ''}</h1>
     <div class="meta"><span class="av" style="background:${L.c};color:#fff">${esc((m.from || '?').trim()[0].toUpperCase())}</span>
-     <div class="who"><b>${esc(m.from)}</b><span>${esc(m.email)} · ${new Date(m.t).toLocaleString('en-GB', {weekday:'short', day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'})}</span>${b && b.to ? `<span>to ${esc(b.to)}${b.cc ? ', cc ' + esc(b.cc) : ''}</span>` : ''}</div></div>
+     <div class="who"><b>${esc(m.from)}</b><span>${esc(m.email)} · ${new Date(m.t).toLocaleString('en-GB', {weekday:'short', day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'})}</span>${!T && bOk && b.to ? `<span>to ${esc(b.to)}${b.cc ? ', cc ' + esc(b.cc) : ''}</span>` : ''}</div>
+     ${m.folder !== sp.sent && m.email ? `<button class="chip" data-a="vip" style="${isVip(m) ? 'background:#e8a200;color:#fff;border-color:#e8a200' : ''}" title="VIPs go to the top and always notify">${isVip(m) ? '★ VIP' : '☆ VIP'}</button>` : ''}</div>
     ${warn ? `<div class="warn">${ico('shield')}<div>${warn}</div></div>` : ''}
-    ${text ? `<div class="tldr"><b>In short</b>${esc(tldr(text))}${fx.length ? `<div class="facts">${fx.map(x => `<span class="fact">${esc(x)}</span>`).join('')}</div>` : ''}</div>` : ''}
-    ${content}${atts}${unsub}${quick}
+    ${text ? `<div class="tldr"><b>In short</b>${esc(tldr(text))}${factsHtml(m.subj, text)}</div>` : ''}
+    ${content}${unsub}${quick}
    </div>
    <div class="rfoot"><button data-a="reply">${ico('reply')}Reply</button><button data-a="fwd">${ico('fwd')}Forward</button></div>`;
 }
 function linkify(s) { return s.replace(/\bhttps?:\/\/[^\s<]+[^\s<.,;:!?)\]'"]/g, u => `<a href="${u}" data-ext="1">${u.length > 60 ? u.slice(0, 57) + '…' : u}</a>`); }
-function mountFrame(doc) {
-  const f = $('frame'); if (!f) return;
+function mountFrame(doc, id) {
+  const f = $(id || 'frame'); if (!f) return;
   const fit = () => { try { f.style.height = Math.max(120, f.contentDocument.documentElement.scrollHeight + 4) + 'px'; } catch (e) {} };
   f.onload = () => {
     fit(); setTimeout(fit, 400); setTimeout(fit, 1500);
@@ -726,9 +869,14 @@ function mountFrame(doc) {
 async function readerAction(a) {
   const m = byKey(S.sel); if (!m && a !== 'back') return;
   if (a === 'back') return closeReader();
-  if (['archive', 'trash', 'spam', 'inbox'].includes(a)) return move([m], a);
+  const all = S.thread ? S.thread.items.filter(x => x.folder === m.folder) : membersOf(m);
+  if (['archive', 'trash', 'spam', 'inbox'].includes(a)) return move(all, a);
   if (a === 'star') return flag(m, m.star ? 'unstar' : 'star');
-  if (a === 'unread') { flag(m, 'unread'); return closeReader(); }
+  if (a === 'unread') { flagMany(all, 'unread'); renderList(); return closeReader(); }
+  if (a === 'snooze') return snoozeDialog(all);
+  if (a === 'vip') { const e = (m.email || '').toLowerCase(); vips.has(e) ? vips.delete(e) : vips.add(e); ls.set('brisk-vips', [...vips]); syncNotify(); toast(vips.has(e) ? `${m.from} is a VIP: top of the inbox, always notified` : `${m.from} is no longer a VIP`); renderReader(); renderList(); return; }
+  if (a === 'forever') return dialog(`<p>Delete ${all.length > 1 ? 'these ' + all.length + ' emails' : 'this email'} forever? This can’t be undone.</p>`, [['Cancel'], ['Delete forever', 'pri', () => deleteForever(all)]]);
+  if (a === 'wake') { call('wake', {acct: m.acct, mid: m.mid}).then(() => { toast('Back in your inbox'); S.items = S.items.filter(x => x !== m); closeReader(); delete cache[ck(m.acct, 'INBOX')]; }).catch(e => toast(e.message)); return; }
   if (a === 'reply') return openCompose('reply', m);
   if (a === 'fwd') return openCompose('fwd', m);
   if (a === 'img') { S.showImg = true; return renderReader(); }
@@ -747,8 +895,8 @@ function recolour(m) {
   });
 }
 function relabel() { for (const p in cache) withLabel(cache[p]); withLabel(S.items); if (S.server) withLabel(S.server); saveCache(); renderList(); renderReader(); renderDrawer(); }
-function unsubscribe(m) {
-  const h = S.cur.unsub, web = (h.match(/<(https?:[^>]+)>/) || [])[1], mail = (h.match(/<mailto:([^>]+)>/i) || [])[1];
+function unsubscribe(m, hdr) {
+  const h = hdr || (S.cur && S.cur.unsub) || '', web = (h.match(/<(https?:[^>]+)>/) || [])[1], mail = (h.match(/<mailto:([^>]+)>/i) || [])[1];
   dialog(`<p>Unsubscribe from <b>${esc(m.from)}</b>? ${web ? 'Their unsubscribe page will open.' : 'Brisk will send them an unsubscribe email for you.'}</p>`, [['Cancel'], ['Unsubscribe', 'pri', async () => {
     if (web) openUrl(web);
     else if (mail) {
@@ -757,6 +905,91 @@ function unsubscribe(m) {
     }
     move([m], 'trash');
   }]]);
+}
+
+/* ================= snooze, delete forever, calendar ================= */
+function whenText(t) {
+  const d = new Date(t), n = new Date(), tm = d.toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'});
+  const day = Math.round((new Date(d.getFullYear(), d.getMonth(), d.getDate()) - new Date(n.getFullYear(), n.getMonth(), n.getDate())) / 864e5);
+  if (day === 0) return 'today ' + tm; if (day === 1) return 'tomorrow ' + tm;
+  if (day > 1 && day < 7) return d.toLocaleDateString('en-GB', {weekday:'short'}) + ' ' + tm;
+  return d.toLocaleDateString('en-GB', {day:'numeric', month:'short'}) + ' ' + tm;
+}
+function at(daysAhead, h, mi = 0) { const d = new Date(); d.setDate(d.getDate() + daysAhead); d.setHours(h, mi, 0, 0); return d.getTime(); }
+function timeOptions(kind) {
+  const n = new Date(), o = [], dow = n.getDay();
+  if (kind === 'snooze') {
+    if (n.getHours() < 15) o.push(['Later today', at(0, n.getHours() + 3)]);
+    if (n.getHours() < 17) o.push(['This evening', at(0, 18)]);
+  }
+  o.push(['Tomorrow morning', at(1, 8)]);
+  if (kind === 'send') o.push(['Tomorrow afternoon', at(1, 13)]);
+  if (kind === 'snooze' && dow >= 1 && dow <= 4) o.push(['This weekend', at(6 - dow, 9)]);
+  o.push(['Next week', at(((8 - dow) % 7) || 7, 8)]);
+  return o;
+}
+function pickTime(kind, title, done) {
+  const opts = timeOptions(kind);
+  const def = new Date(at(1, 8)); const pad = x => String(x).padStart(2, '0');
+  const val = `${def.getFullYear()}-${pad(def.getMonth() + 1)}-${pad(def.getDate())}T08:00`;
+  dialog(`<p><b>${esc(title)}</b></p><div class="optlist">${opts.map((x, i) => `<button data-opt="${i}">${esc(x[0])}<small>${esc(whenText(x[1]))}</small></button>`).join('')}</div>
+    <label style="font-size:14px;color:var(--mute)">Or pick a date and time</label><input type="datetime-local" class="dlgin" id="dlgwhen" value="${val}">`,
+    [['Cancel'], ['Use this time', 'pri', () => { const t = new Date($('dlgwhen').value).getTime(); if (isNaN(t) || t < Date.now()) { toast('Pick a time in the future'); return; } done(t); }]],
+    box => box.querySelectorAll('[data-opt]').forEach(b => b.onclick = () => { closeDialog(); done(opts[+b.dataset.opt][1]); }));
+}
+function groupCalls(items) { const g = {}; for (const m of items) { const k = m.acct + '\n' + m.folder; (g[k] = g[k] || []).push(m); } return Object.entries(g).map(([k, ms]) => { const [acct, folder] = k.split('\n'); return {acct, folder, ms}; }); }
+function snoozeDialog(items) {
+  items = items.filter(m => m.folder !== 'Brisk Snoozed');
+  if (!items.length) return;
+  pickTime('snooze', items.length > 1 ? `Snooze ${items.length} emails until…` : 'Snooze until…', async until => {
+    flush();
+    const ks = new Set(items.map(key));
+    S.items = S.items.filter(m => !ks.has(key(m))); if (S.server) S.server = S.server.filter(m => !ks.has(key(m)));
+    if (S.sel && ks.has(S.sel)) closeReader(); else renderList();
+    for (const g of groupCalls(items)) {
+      try { await call('snooze', {acct: g.acct, folder: g.folder, uids: g.ms.map(m => m.uid), until}); const c = cache[ck(g.acct, g.folder)]; if (c) cache[ck(g.acct, g.folder)] = c.filter(m => !ks.has(key(m))); }
+      catch (e) { toast('Couldn’t snooze: ' + e.message); }
+    }
+    saveCache(); delete cache[ck(items[0].acct, 'Brisk Snoozed')];
+    for (const m of items) if (m.mid) S.snz.set(m.mid, until);
+    toast(`Snoozed until ${whenText(until)}`);
+  });
+}
+async function deleteForever(items) {
+  const ks = new Set(items.map(key));
+  S.items = S.items.filter(m => !ks.has(key(m))); if (S.sel && ks.has(S.sel)) closeReader(); else renderList();
+  for (const g of groupCalls(items)) {
+    try { await call('act', {acct: g.acct, folder: g.folder, uids: g.ms.map(m => m.uid), op: 'delete'}); const c = cache[ck(g.acct, g.folder)]; if (c) cache[ck(g.acct, g.folder)] = c.filter(m => !ks.has(key(m))); }
+    catch (e) { toast(e.message); }
+  }
+  saveCache(); toast(`${items.length > 1 ? items.length + ' emails' : 'Email'} deleted forever`);
+}
+const MONTHS = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+function parseDay(str) {
+  const m = (str || '').match(/(\d{1,2})(?:st|nd|rd|th)? (jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*(?: (\d{4}))?/i);
+  if (!m) return null;
+  const n = new Date(); let y = m[3] ? +m[3] : n.getFullYear();
+  let d = new Date(y, MONTHS.indexOf(m[2].toLowerCase()), +m[1]);
+  if (!m[3] && d.getTime() < n.getTime() - 30 * 864e5) d = new Date(y + 1, d.getMonth(), d.getDate());
+  return d;
+}
+function parseClock(str) {
+  let m = (str || '').match(/\b(\d{1,2})(?::(\d\d))?\s?(am|pm)\b/i);
+  if (m) { let h = +m[1] % 12; if (/pm/i.test(m[3])) h += 12; return [h, +(m[2] || 0)]; }
+  m = (str || '').match(/\b([01]?\d|2[0-3]):([0-5]\d)\b/);
+  return m ? [+m[1], +m[2]] : null;
+}
+function addToCalendar(dayText) {
+  const m = byKey(S.sel); if (!m) return;
+  const d = parseDay(dayText); if (!d) { toast('Couldn’t read that date'); return; }
+  const txt = (m.subj || '') + ' ' + ((S.cur && S.cur.text) || m.snip || '');
+  const near = txt.slice(Math.max(0, txt.indexOf(dayText.split(' ').pop()) - 10)).slice(0, 120);
+  const t = parseClock(near) || null;
+  let begin, end, allDay = !t;
+  if (t) { d.setHours(t[0], t[1], 0, 0); begin = d.getTime(); end = begin + 3600e3; }
+  else { begin = Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()); end = begin + 864e5; }
+  if (DEMO) { toast(`Calendar: “${m.subj}” on ${d.toLocaleString('en-GB', allDay ? {day:'numeric', month:'short'} : {day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'})}`); return; }
+  N.addEvent(m.subj || 'Event', begin, end, allDay, (m.from ? 'From ' + m.from + '\n\n' : '') + (m.snip || '').slice(0, 400));
 }
 
 /* ================= multi-select ================= */
@@ -785,13 +1018,14 @@ $('selbtn').onclick = () => startPick();
 $('selx').onclick = clearPick;
 $('selbar').onclick = e => {
   const b = e.target.closest('[data-bulk]'); if (!b) return;
-  const op = b.dataset.bulk, items = [...picked].map(byKey).filter(Boolean);
+  const op = b.dataset.bulk, items = expand([...picked].map(byKey).filter(Boolean));
   if (op === 'all') {
     if (shown.length && shown.every(m => picked.has(key(m)))) picked.clear(); else shown.forEach(m => picked.add(key(m)));
     return updatePick();
   }
   if (!items.length) { toast('Tap emails to select them first'); return; }
   if (op === 'trash' || op === 'archive') { clearPick(); move(items, op); return; }
+  if (op === 'snooze') { clearPick(); snoozeDialog(items); return; }
   if (op === 'read') { const all = items.every(m => m.seen); flagMany(items, all ? 'unread' : 'read'); toast(`${items.length} marked ${all ? 'unread' : 'read'}`); }
   if (op === 'star') { const all = items.every(m => m.star); flagMany(items, all ? 'unstar' : 'star'); toast(`${items.length} ${all ? 'unstarred' : 'starred'}`); }
   clearPick();
@@ -799,6 +1033,7 @@ $('selbar').onclick = e => {
 let lpT = null, lpAt = 0;
 
 /* ================= swipe ================= */
+const SWIPE = {archive:{n:'Archive', i:'archive', c:'#2e8bd6'}, trash:{n:'Delete', i:'trash', c:'#ff5c8a'}, read:{n:'Read / unread', i:'mail', c:'#0f9a90'}, snooze:{n:'Snooze', i:'clock', c:'#d98a00'}, star:{n:'Star', i:'star', c:'#e8a200'}, none:{n:'Nothing', i:'close', c:'#7b8aa0'}};
 let sw = null;
 $('rows').addEventListener('touchstart', e => {
   const rw = e.target.closest('.rw'); if (!rw) return;
@@ -812,16 +1047,27 @@ $('rows').addEventListener('touchmove', e => {
   if (!sw) return; const t = e.touches[0], dx = t.clientX - sw.x, dy = t.clientY - sw.y;
   if (!sw.on) { if (Math.abs(dy) > 12) { sw = null; return; } if (Math.abs(dx) > 14) sw.on = true; else return; }
   sw.dx = dx; sw.row.style.transform = `translateX(${dx}px)`;
-  sw.rw.querySelector('.under').className = 'under ' + (dx > 0 ? 'l' : 'r');
+  const act = dx > 0 ? settings.swipeR : settings.swipeL, u = sw.rw.querySelector('.under');
+  if (act === 'none') { sw.row.style.transform = ''; return; }
+  u.style.background = SWIPE[act].c; u.style.justifyContent = dx > 0 ? 'flex-start' : 'flex-end';
+  u.innerHTML = `<span style="display:flex;gap:8px;align-items:center">${ico(SWIPE[act].i)}${SWIPE[act].n}</span>`;
 }, {passive: true});
 $('rows').addEventListener('touchend', () => {
   clearTimeout(lpT); lpT = null;
   if (!sw) return; const s = sw; sw = null; if (!s.on) return;
   s.row.style.transition = 'transform .15s';
   const m = byKey(s.rw.dataset.k), w = s.rw.clientWidth;
-  if (m && Math.abs(s.dx) > w * .3) {
-    s.row.style.transform = `translateX(${s.dx > 0 ? w : -w}px)`;
-    setTimeout(() => move([m], s.dx > 0 && m.folder !== targetFor('archive', m.acct) ? 'archive' : 'trash'), 140);
+  const act = s.dx > 0 ? settings.swipeR : settings.swipeL;
+  if (m && act !== 'none' && Math.abs(s.dx) > w * .3) {
+    const goes = act === 'archive' || act === 'trash' || act === 'snooze';
+    if (goes && !(act === 'archive' && m.folder === targetFor('archive', m.acct))) {
+      s.row.style.transform = `translateX(${s.dx > 0 ? w : -w}px)`;
+      setTimeout(() => act === 'snooze' ? (snoozeDialog(membersOf(m)), renderList()) : move(membersOf(m), act), 140);
+    } else {
+      s.row.style.transform = ''; setTimeout(() => { s.row.style.transition = ''; }, 160);
+      if (act === 'read') { const g = membersOf(m), anyUnread = g.some(x => !x.seen); flagMany(g, anyUnread ? 'read' : 'unread'); renderList(); }
+      if (act === 'star') flag(m, m.star ? 'unstar' : 'star');
+    }
   } else { s.row.style.transform = ''; setTimeout(() => { s.row.style.transition = ''; }, 160); }
   s.rw.dataset.swiped = '1'; setTimeout(() => { delete s.rw.dataset.swiped; }, 60);
 });
@@ -897,6 +1143,7 @@ $('chead').onclick = e => {
 
 /* ================= compose ================= */
 let C = {mode:'new', ref:null, files:[]};
+const newDraftKey = () => 'bk-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 function quoteOf(m, b) {
   const t = (b && b.text) || m.snip || '';
   return `\n\n— On ${new Date(m.t).toLocaleString('en-GB', {day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit'})}, ${m.from} <${m.email}> wrote:\n` + t.split('\n').slice(0, 40).map(l => '> ' + l).join('\n');
@@ -907,7 +1154,7 @@ function fillFrom(acct) {
 }
 function openCompose(mode = 'new', m = null, prefill = '') {
   flush();
-  C = {mode, ref: m, files: [], body: m && S.sel === key(m) ? S.cur : null};
+  C = {mode, ref: m, files: [], body: m && typeof m === 'object' && S.sel === key(m) ? S.cur : null, draftKey: newDraftKey(), dirty: false};
   const sig = settings.sig ? '\n\n-- \n' + settings.sig : '';
   $('ccrow').classList.add('hide'); $('ccc').value = '';
   fillFrom(m && m.acct ? m.acct : S.acct !== 'all' ? S.acct : (S.accounts[0] || {}).id);
@@ -926,10 +1173,29 @@ function openCompose(mode = 'new', m = null, prefill = '') {
     const d = ls.get('brisk-draft', null);
     $('cto').value = d ? d.to : (typeof m === 'string' ? m : ''); $('csub').value = d ? d.sub : ''; $('cbody').value = d ? d.body : sig;
     if (d && d.from && accById(d.from)) $('cfrom').value = d.from;
+    if (d && d.key) C.draftKey = d.key;
   }
+  showCompose(mode === 'reply' ? prefill : null);
+}
+function showCompose(prefill) {
   renderFiles(); runCheck(); contacts();
   $('compose').classList.add('open');
-  setTimeout(() => { const el = mode === 'reply' ? $('cbody') : $('cto'); el.focus(); if (el === $('cbody')) el.setSelectionRange(prefill ? prefill.length + 1 : 0, prefill ? prefill.length + 1 : 0); }, 220);
+  setTimeout(() => {
+    const el = C.mode === 'reply' ? $('cbody') : ($('cto').value ? $('cbody') : $('cto')); el.focus();
+    if (el === $('cbody') && C.mode === 'reply') { const p = prefill ? prefill.length + 1 : 0; el.setSelectionRange(p, p); }
+  }, 220);
+}
+async function openDraft(m) {
+  toast('Opening draft…');
+  try {
+    const b = await call('body', {acct: m.acct, folder: m.folder, uid: m.uid, peek: true});
+    C = {mode:'draft', ref:null, files:[], body:null, draftKey: b.draftKey || newDraftKey(), orig: b.draftKey ? null : {acct: m.acct, folder: m.folder, uid: m.uid}, inReplyTo:'', dirty:false};
+    fillFrom(m.acct);
+    $('ctitle').textContent = 'Draft'; $('cto').value = b.to || ''; $('ccc').value = b.cc || ''; $('ccrow').classList.toggle('hide', !b.cc);
+    $('csub').value = b.subj === '(no subject)' ? '' : b.subj; $('cbody').value = b.text || '';
+    $('toast').classList.remove('show');
+    showCompose();
+  } catch (e) { toast(e.message); }
 }
 function composeMailto(h) {
   const [to, qs] = h.replace(/^mailto:/i, '').split('?'); const p = new URLSearchParams(qs || '');
@@ -938,9 +1204,30 @@ function composeMailto(h) {
   openCompose('new', decodeURIComponent(to)); if (m) $('cfrom').value = m.acct;
   if (p.get('subject')) $('csub').value = p.get('subject'); if (p.get('body')) $('cbody').value = p.get('body'); runCheck();
 }
-function saveDraft() { if (C.mode === 'new' && $('compose').classList.contains('open')) ls.set('brisk-draft', {from:$('cfrom').value, to:$('cto').value, sub:$('csub').value, body:$('cbody').value}); }
-function closeCompose(discard) {
-  if (discard) { try { localStorage.removeItem('brisk-draft'); } catch (e) {} }
+function saveDraft() { if ((C.mode === 'new' || C.mode === 'draft') && $('compose').classList.contains('open')) ls.set('brisk-draft', {from:$('cfrom').value, to:$('cto').value, sub:$('csub').value, body:$('cbody').value, key:C.draftKey}); }
+function typedText() { return $('cbody').value.split(/\n-- \n|\n—\s?On /)[0].trim(); }
+function payload() {
+  const acct = $('cfrom').value, sp = spOf(acct), ref = C.body || {};
+  return {acct, to: $('cto').value.trim(), cc: $('ccc').value.trim(), subject: $('csub').value, body: $('cbody').value, name: settings.name,
+    sentFolder: sp.sent || 'Sent', draftsFolder: sp.drafts || 'Drafts', draftKey: C.draftKey,
+    inReplyTo: C.mode === 'reply' ? ref.messageId || '' : '', references: C.mode === 'reply' ? ref.references || '' : '', attachments: C.files};
+}
+async function serverDraft(p) {
+  if (!p.to && !p.subject.trim() && !typedText()) return;
+  try {
+    await call('saveDraft', {...p, folder: p.draftsFolder, attachments: []});
+    if (C.orig) { const o = C.orig; C.orig = null; call('act', {acct: o.acct, folder: o.folder, uids: [o.uid], op: 'delete'}).catch(() => {}); }
+    delete cache[ck(p.acct, p.draftsFolder)];
+  } catch (e) { /* the local copy is still kept */ }
+}
+function closeCompose(how) {
+  const p = payload(), had = !!(p.to || p.subject.trim() || typedText());
+  if (how === 'save' && had) { serverDraft(p); toast('Draft saved'); }
+  if (how === 'discard') {
+    call('deleteDraft', {acct: p.acct, folder: p.draftsFolder, draftKey: p.draftKey}).catch(() => {});
+    if (C.orig) call('act', {acct: C.orig.acct, folder: C.orig.folder, uids: [C.orig.uid], op: 'delete'}).catch(() => {});
+  }
+  if (how !== 'save' || C.mode === 'reply' || C.mode === 'fwd') { try { localStorage.removeItem('brisk-draft'); } catch (e) {} }
   $('compose').classList.remove('open'); document.activeElement && document.activeElement.blur();
 }
 function contacts() {
@@ -963,30 +1250,65 @@ $('cfile').onchange = e => {
 };
 $('cfrom').onchange = saveDraft;
 $('ccbtn').onclick = () => { $('ccrow').classList.toggle('hide'); $('ccc').focus(); };
-$('cclose').onclick = () => {
-  const typed = $('cbody').value.split(/\n-- \n|\n—\s?On /)[0].trim();
-  if (C.mode !== 'new' && typed) dialog('<p>Discard this reply?</p>', [['Keep writing'], ['Discard', 'pri', () => closeCompose(true)]]);
-  else closeCompose(false);
+$('cclose').onclick = () => closeCompose('save');
+$('cdiscard').onclick = () => {
+  if (!typedText() && !$('cto').value && !$('csub').value) return closeCompose('discard');
+  dialog('<p>Discard this message? Any saved draft is deleted too.</p>', [['Keep writing'], ['Discard', 'pri', () => closeCompose('discard')]]);
 };
-['cbody', 'csub', 'cto'].forEach(id => $(id).addEventListener('input', () => { clearTimeout(window.__ck); window.__ck = setTimeout(runCheck, 120); }));
-$('csend').onclick = async () => {
-  const to = $('cto').value.trim(), acct = $('cfrom').value;
+['cbody', 'csub', 'cto'].forEach(id => $(id).addEventListener('input', () => { C.dirty = true; clearTimeout(window.__ck); window.__ck = setTimeout(runCheck, 120); }));
+function checkBeforeSend(go) {
+  const to = $('cto').value.trim();
   if (!to || !/@/.test(to)) { toast('Add who it’s to'); $('cto').focus(); return; }
-  const mine = $('cbody').value.split(/\n—\s?On .+ wrote/)[0];
-  const warns = [];
+  const mine = $('cbody').value.split(/\n—\s?On .+ wrote/)[0], warns = [];
   if (/\b(attached|attachment|enclosed|see attached)\b/i.test(mine) && !C.files.length) warns.push('You mention an attachment but haven’t attached anything.');
   if (!$('csub').value.trim()) warns.push('There’s no subject.');
   const big = ISS.filter(x => x.k === 'sp').length; if (big) warns.push(`There ${big > 1 ? 'are ' + big + ' spelling mistakes' : 'is a spelling mistake'}.`);
-  if (warns.length && !C.confirmed) { dialog(`<p>${warns.map(esc).join('<br>')}</p>`, [['Go back'], ['Send anyway', 'pri', () => { C.confirmed = true; $('csend').click(); }]]); return; }
-  C.confirmed = false;
-  const btn = $('csend'); btn.disabled = true; btn.lastChild.textContent = 'Sending…';
-  const ref = C.body || {}, sp = spOf(acct);
+  if (warns.length) { dialog(`<p>${warns.map(esc).join('<br>')}</p>`, [['Go back'], ['Carry on', 'pri', go]]); return; }
+  go();
+}
+let pendingSend = null;
+function snapshot() { return {C: {...C, files: C.files.slice()}, from: $('cfrom').value, to: $('cto').value, cc: $('ccc').value, sub: $('csub').value, body: $('cbody').value, title: $('ctitle').textContent}; }
+function restore(sn) {
+  C = sn.C; fillFrom(sn.from); $('cto').value = sn.to; $('ccc').value = sn.cc; $('ccrow').classList.toggle('hide', !sn.cc);
+  $('csub').value = sn.sub; $('cbody').value = sn.body; $('ctitle').textContent = sn.title; showCompose();
+}
+async function reallySend(ps) {
   try {
-    await call('send', {acct, to, cc: $('ccc').value.trim(), subject: $('csub').value, body: $('cbody').value, name: settings.name, sentFolder: sp.sent || 'Sent',
-      inReplyTo: C.mode === 'reply' ? ref.messageId || '' : '', references: C.mode === 'reply' ? ref.references || '' : '', attachments: C.files});
-    closeCompose(true); toast(multi() ? 'Sent from ' + (accById(acct) || {}).email : 'Sent'); delete cache[ck(acct, sp.sent || 'Sent')];
-  } catch (e) { toast('Not sent: ' + e.message); }
-  btn.disabled = false; btn.lastChild.textContent = 'Send';
+    await call('send', ps.p);
+    if (ps.orig) call('act', {acct: ps.orig.acct, folder: ps.orig.folder, uids: [ps.orig.uid], op: 'delete'}).catch(() => {});
+    toast(multi() ? 'Sent from ' + (accById(ps.p.acct) || {}).email : 'Sent');
+    delete cache[ck(ps.p.acct, ps.p.sentFolder)]; delete cache[ck(ps.p.acct, ps.p.draftsFolder)];
+  } catch (e) { toast('Not sent: ' + e.message); restore(ps.sn); }
+}
+function flushSend() { if (!pendingSend) return; const ps = pendingSend; pendingSend = null; clearTimeout(ps.timer); reallySend(ps); }
+$('csend').onclick = () => checkBeforeSend(() => {
+  flushSend();
+  const ps = {p: payload(), sn: snapshot(), orig: C.orig};
+  closeCompose('sent');
+  const secs = +settings.undoSecs || 0;
+  if (!secs) return reallySend(ps);
+  pendingSend = ps; ps.timer = setTimeout(flushSend, secs * 1000);
+  toast(`Sending in ${secs}s`, true, secs * 1000, () => { if (pendingSend === ps) { clearTimeout(ps.timer); pendingSend = null; restore(ps.sn); } });
+});
+$('clater').onclick = () => checkBeforeSend(() => pickTime('send', 'Send later…', async when => {
+  const p = payload();
+  try {
+    await call('schedule', {payload: p, at: when});
+    await serverDraft(p);
+    closeCompose('sent'); toast(`Scheduled for ${whenText(when)}`);
+  } catch (e) { toast('Couldn’t schedule: ' + e.message); }
+}));
+$('ctpl').onclick = () => {
+  const el = $('cbody'), pos = el.selectionStart || 0;
+  sheet('Templates', `<p class="sumline">Tap one to insert it where your cursor is.</p>${templates.map((t, i) => `<div class="srow"><div class="grow" data-tpl="${i}" style="cursor:pointer"><b>${esc(t.name)}</b><small>${esc(t.text)}</small></div><button data-deltpl="${i}" aria-label="Delete template">✕</button></div>`).join('') || '<p class="sumline">No templates yet.</p>'}
+    <button class="chip" id="tplsave" style="margin-top:8px">+ Save this message as a template</button>`, box => {
+    box.querySelectorAll('[data-tpl]').forEach(b => b.onclick = () => { const t = templates[+b.dataset.tpl].text, v = el.value; el.value = v.slice(0, pos) + t + v.slice(pos); closeSheet(); runCheck(); el.focus(); el.setSelectionRange(pos + t.length, pos + t.length); });
+    box.querySelectorAll('[data-deltpl]').forEach(b => b.onclick = () => { templates.splice(+b.dataset.deltpl, 1); ls.set('brisk-templates', templates); $('ctpl').click(); });
+    $('tplsave').onclick = () => {
+      const text = typedText(); if (!text) { toast('Write something first'); return; }
+      dialog(`<p>Name this template</p><input class="dlgin" id="tplname" value="${esc($('csub').value.slice(0, 40))}">`, [['Cancel'], ['Save', 'pri', () => { templates.unshift({name: $('tplname').value.trim() || text.slice(0, 30), text}); ls.set('brisk-templates', templates); toast('Template saved'); $('ctpl').click(); }]]);
+    };
+  });
 };
 
 /* ================= drawer + settings ================= */
@@ -1002,9 +1324,15 @@ function renderDrawer() {
       <button class="nav rm" data-rmacct="${a.id}">Remove this account</button>
      </div></div>`;
   };
+  const sel = (id, val, opts) => `<select id="${id}">${opts.map(([v, n]) => `<option value="${v}" ${String(val) === String(v) ? 'selected' : ''}>${n}</option>`).join('')}</select>`;
+  const swipeOpts = Object.entries(SWIPE).map(([k, v]) => [k, v.n]);
   $('drawer').innerHTML = `<div class="brand">Brisk<b>.</b></div><div class="acct">${S.accounts.length} account${S.accounts.length === 1 ? '' : 's'}</div>
    <button class="nav" data-compose="1" style="background:var(--pink);color:#fff;font-weight:600;margin-bottom:8px">${ico('pen')}Compose</button>
-   ${multi() ? `<button class="nav ${S.acct === 'all' ? 'on' : ''}" data-allinbox="1">${ico('inbox')}All inboxes</button>` : ''}
+   ${multi() ? `<button class="nav ${S.acct === 'all' && S.view === 'inbox' ? 'on' : ''}" data-allinbox="1">${ico('inbox')}All inboxes</button>` : ''}
+   <button class="nav ${S.view === 'snoozed' ? 'on' : ''}" data-snoozed="1">${ico('clock')}Snoozed</button>
+   <button class="nav" data-panel="money">${ico('box')}Bills &amp; parcels</button>
+   <button class="nav" data-panel="cleanup">${ico('spark')}Clean up</button>
+   <button class="nav" data-panel="scheduled">${ico('send')}Scheduled</button>
    ${S.accounts.map(accBlock).join('')}
    <button class="nav addacc" data-addacc="1">+ Add another email account</button>
    <h4>Colour rules</h4>
@@ -1013,11 +1341,30 @@ function renderDrawer() {
     <input id="rtext" placeholder="e.g. brightlane.co.uk">
     <select id="rlabel">${Object.entries(LABELS).map(([k, L]) => `<option value="${k}">colour as ${L.name}</option>`).join('')}</select>
     <button class="lite" id="radd">Add rule</button></div>
-   <h4>Settings</h4>
+   <h4>Notifications</h4>
+   <div class="set">
+    <label><input type="checkbox" id="snotify" ${settings.notify ? 'checked' : ''}> New-mail notifications</label>
+    <label><input type="checkbox" id="svip" ${settings.vipOnly ? 'checked' : ''}> Only notify me about VIPs</label>
+    <div style="color:#8aa3bf;font-size:12.5px">${vips.size ? vips.size + ' VIP' + (vips.size > 1 ? 's' : '') + '. ' : ''}Tap ☆ VIP on any email to add someone. Checks run about every 15 minutes.</div>
+   </div>
+   <h4>Look and feel</h4>
+   <div class="set">
+    <div class="row2"><span>Theme</span>${sel('stheme', settings.theme, [['system', 'Match phone'], ['light', 'Light'], ['dark', 'Dark']])}</div>
+    <div class="row2"><span>Text size</span>${sel('szoom', settings.zoom, [[90, 'Small'], [100, 'Normal'], [115, 'Large'], [130, 'Extra large']])}</div>
+    <div class="row2"><span>Swipe right</span>${sel('sswr', settings.swipeR, swipeOpts)}</div>
+    <div class="row2"><span>Swipe left</span>${sel('sswl', settings.swipeL, swipeOpts)}</div>
+    <div class="row2"><span>Undo send</span>${sel('sundo', settings.undoSecs, [[0, 'Off'], [5, '5 seconds'], [10, '10 seconds'], [20, '20 seconds'], [30, '30 seconds']])}</div>
+    <label><input type="checkbox" id="sthreads" ${settings.threads ? 'checked' : ''}> Group emails into conversations</label>
+    <label><input type="checkbox" id="simg" ${settings.images ? 'checked' : ''}> Always show remote images</label>
+   </div>
+   <h4>Privacy</h4>
+   <div class="set">
+    <label><input type="checkbox" id="slock" ${settings.lock ? 'checked' : ''}> Lock Brisk with fingerprint or PIN</label>
+   </div>
+   <h4>You</h4>
    <div class="set">
     <span>Your name on emails</span><input id="sname" value="${esc(settings.name)}" placeholder="Dave">
     <span>Signature</span><textarea id="ssig" rows="3" placeholder="Sent with Brisk">${esc(settings.sig)}</textarea>
-    <label><input type="checkbox" id="simg" ${settings.images ? 'checked' : ''}> Always show remote images</label>
     <div style="color:#8aa3bf;font-size:12px;margin-top:10px">Brisk ${DEMO ? 'preview' : esc(N.version())}</div>
    </div>`;
 }
@@ -1028,6 +1375,8 @@ $('drawer').onclick = e => {
   const t = e.target.closest('button'); if (!t) return;
   if (t.dataset.compose) { openDrawer(false); openCompose(); }
   if (t.dataset.allinbox) { setView('all', 'inbox'); openDrawer(false); }
+  if (t.dataset.snoozed) { setView('all', 'snoozed'); openDrawer(false); }
+  if (t.dataset.panel) { openDrawer(false); ({money: moneyPanel, cleanup: cleanupPanel, scheduled: scheduledPanel})[t.dataset.panel](); }
   if (t.dataset.toggle) { const el = $('acc-' + t.dataset.toggle); if (el) el.classList.toggle('hide'); }
   if (t.dataset.view) { setView(t.dataset.acct, t.dataset.view, spOf(t.dataset.acct)[t.dataset.view] || 'INBOX'); openDrawer(false); }
   if (t.dataset.path) { setView(t.dataset.acct, 'label', t.dataset.path); openDrawer(false); }
@@ -1047,11 +1396,151 @@ $('drawer').onclick = e => {
   if (t.id === 'radd') { const tx = $('rtext').value.trim(); if (!tx) return; rules.unshift({field: $('rfield').value, text: tx, label: $('rlabel').value}); ls.set('brisk-rules', rules); relabel(); }
 };
 $('drawer').addEventListener('change', e => {
-  if (e.target.id === 'sname') { settings.name = e.target.value.trim(); updateAvatar(); }
-  if (e.target.id === 'ssig') settings.sig = e.target.value.trim();
-  if (e.target.id === 'simg') settings.images = e.target.checked;
-  ls.set('brisk-settings', settings);
+  const id = e.target.id, v = e.target.value, ch = e.target.checked;
+  if (id === 'sname') { settings.name = v.trim(); updateAvatar(); }
+  if (id === 'ssig') settings.sig = v.trim();
+  if (id === 'simg') settings.images = ch;
+  if (id === 'sthreads') { settings.threads = ch; renderList(); }
+  if (id === 'stheme') { settings.theme = v; applyLook(); }
+  if (id === 'szoom') { settings.zoom = +v; applyLook(); }
+  if (id === 'sswr') settings.swipeR = v;
+  if (id === 'sswl') settings.swipeL = v;
+  if (id === 'sundo') settings.undoSecs = +v;
+  if (id === 'snotify' || id === 'svip') { settings.notify = $('snotify').checked; settings.vipOnly = $('svip').checked; syncNotify(); }
+  if (id === 'slock') {
+    const err = DEMO ? '' : N.setLock(ch);
+    if (err) { toast(err); e.target.checked = false; settings.lock = false; }
+    else { settings.lock = ch; toast(ch ? 'Brisk will ask for your fingerprint or PIN' : 'App lock off'); }
+  }
+  saveSettings();
 });
+function applyLook() {
+  if (settings.theme === 'system') document.documentElement.removeAttribute('data-theme'); else document.documentElement.dataset.theme = settings.theme;
+  if (!DEMO) try { N.setTextZoom(+settings.zoom || 100); } catch (e) {} else document.body.style.zoom = (+settings.zoom || 100) / 100;
+}
+function syncNotify() { call('notifyConfig', {enabled: !!settings.notify, vipOnly: !!settings.vipOnly, vips: [...vips]}).catch(() => {}); }
+
+/* ================= panels ================= */
+function sheet(title, html, after, actions = '') {
+  $('sheett').textContent = title; $('sheetb').innerHTML = html; $('sheeta').innerHTML = actions;
+  $('sheet').classList.remove('hide'); $('sheetb').scrollTop = 0;
+  if (after) after($('sheetb'));
+}
+function closeSheet() { $('sheet').classList.add('hide'); }
+$('sheetx').onclick = closeSheet;
+function openFromPanel(k) { const m = allCached().find(x => key(x) === k); if (!m) return; closeSheet(); S.extra = m; openMail(m); }
+function recent(days) { const since = Date.now() - days * 864e5; return allCached().filter(m => m.t >= since && !/trash|bin|spam|junk/i.test(m.folder)); }
+const gbp = n => '£' + n.toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+function moneyPanel(tab = 'bills') {
+  const now = Date.now(), soon = now + 30 * 864e5;
+  const money = t => { const m = (t || '').match(/£\s?([\d,]+(?:\.\d\d)?)/); return m ? parseFloat(m[1].replace(/,/g, '')) : null; };
+  let html;
+  if (tab === 'bills') {
+    const bills = recent(75).filter(m => m.label === 'bills' && !scam(m)).map(m => {
+      const txt = (m.subj || '') + ' ' + (m.snip || ''), amt = money(txt);
+      const dueM = txt.match(/(?:due|payment date|collect(?:ed)?|by|on)[^.£]{0,25}?(\d{1,2}(?:st|nd|rd|th)? (?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*(?: \d{4})?)/i);
+      const due = dueM ? parseDay(dueM[1]) : null;
+      return {m, amt, due: due ? due.getTime() : null};
+    }).filter(b => b.amt !== null || b.due);
+    bills.sort((a, b) => ((a.due && a.due >= now - 864e5) ? a.due : 9e15) - ((b.due && b.due >= now - 864e5) ? b.due : 9e15) || b.m.t - a.m.t);
+    const upcoming = bills.filter(b => b.due && b.due >= now - 864e5 && b.due <= soon);
+    const total = upcoming.reduce((s, b) => s + (b.amt || 0), 0);
+    html = `<p class="sumline">${upcoming.length ? `<b>${gbp(total)}</b> due in the next 30 days across ${upcoming.length} bill${upcoming.length > 1 ? 's' : ''}` : 'Nothing due in the next 30 days.'}</p>` +
+      (bills.map(b => { const L = LABELS.bills, overdue = b.due && b.due < now - 864e5; return `<button class="card" data-open="${esc(key(b.m))}"><div class="top2"><b>${esc(b.m.from)}</b><span class="big">${b.amt !== null ? gbp(b.amt) : ''}</span></div>
+        <div class="top2"><small>${esc(b.m.subj)}</small>${b.due ? `<span class="pill" style="background:${overdue ? '#7b8aa0' : L.c}">${overdue ? 'Was due' : 'Due'} ${new Date(b.due).toLocaleDateString('en-GB', {day:'numeric', month:'short'})}</span>` : `<small>${fmt(b.m.t)}</small>`}</div></button>`; }).join('') || '<p class="sumline">No bills found in the last 75 days. Bills are emails coloured as Bills.</p>');
+  } else {
+    const parcels = recent(30).filter(m => m.label === 'deliveries').map(m => {
+      const txt = (m.subj || '') + ' ' + (m.snip || '');
+      const status = /delivered/i.test(txt) && !/will be delivered|to be delivered/i.test(txt) ? 'Delivered' : /out for delivery/i.test(txt) ? 'Out for delivery' : /dispatch|shipped|on its way|on the way/i.test(txt) ? 'On its way' : 'Ordered';
+      const arrM = txt.match(/(?:arriv|deliver|expected|due)[a-z]*[^.]{0,20}?((?:mon|tue|wed|thu|fri|sat|sun)[a-z]* \d{1,2}(?:st|nd|rd|th)? (?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*|\d{1,2}(?:st|nd|rd|th)? (?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*|today|tomorrow)/i);
+      const courier = (txt.match(/\b(DPD|Royal Mail|Evri|Hermes|DHL|UPS|FedEx|Yodel|Parcelforce|Amazon Logistics|InPost)\b/i) || [])[1] || '';
+      const track = (txt.match(/\b(?:tracking(?: number)?|track(?:ing)? id)[:#\s]+([A-Z0-9]{6,})/i) || [])[1] || '';
+      return {m, status, arr: arrM ? arrM[1] : '', courier, track};
+    });
+    const rank = {'Out for delivery': 0, 'On its way': 1, 'Ordered': 2, 'Delivered': 3};
+    parcels.sort((a, b) => rank[a.status] - rank[b.status] || b.m.t - a.m.t);
+    const col = {'Out for delivery': '#e8336b', 'On its way': '#d98a00', 'Ordered': '#5b6cff', 'Delivered': '#0f9a90'};
+    const active = parcels.filter(p => p.status !== 'Delivered').length;
+    html = `<p class="sumline">${active ? `<b>${active}</b> parcel${active > 1 ? 's' : ''} on the way` : 'No parcels on the way.'}</p>` +
+      (parcels.map(p => `<button class="card" data-open="${esc(key(p.m))}"><div class="top2"><b>${esc(p.m.from)}</b><span class="pill" style="background:${col[p.status]}">${p.status}</span></div>
+        <div><small>${esc(p.m.subj)}</small></div><div class="top2"><small>${[p.arr ? 'Arriving ' + esc(p.arr) : '', esc(p.courier), p.track ? 'Tracking ' + esc(p.track) : ''].filter(Boolean).join(' · ')}</small><small>${fmt(p.m.t)}</small></div></button>`).join('') || '<p class="sumline">No delivery emails in the last 30 days.</p>');
+  }
+  sheet('Bills & parcels', `<div class="tabs"><button class="chip ${tab === 'bills' ? 'on' : ''}" data-tab="bills">Bills</button><button class="chip ${tab === 'parcels' ? 'on' : ''}" data-tab="parcels">Parcels</button></div>` + html +
+    `<p class="sumline" style="font-size:13px;margin-top:14px">Built from the emails loaded on this phone. Open more folders or scroll further to include older ones.</p>`, box => {
+    box.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => moneyPanel(b.dataset.tab));
+    box.querySelectorAll('[data-open]').forEach(b => b.onclick = () => openFromPanel(b.dataset.open));
+  });
+}
+function bulkSenders() {
+  const g = new Map();
+  for (const m of recent(365)) {
+    if (!m.email || m.folder === (spOf(m.acct).sent || '#')) continue;
+    const k = m.acct + '|' + m.email.toLowerCase();
+    const e = g.get(k) || {acct: m.acct, email: m.email, from: m.from, n: 0, unread: 0, bulk: false, latest: m};
+    e.n++; if (!m.seen) e.unread++;
+    if (m.label === 'news' || /no-?reply|newsletter|news@|info@|marketing|offers|deals|updates|hello@|mailer/i.test(m.email)) e.bulk = true;
+    if (m.t > e.latest.t) e.latest = m;
+    g.set(k, e);
+  }
+  return [...g.values()].filter(e => e.bulk ? e.n >= 2 : e.n >= 5).sort((a, b) => b.unread - a.unread || b.n - a.n);
+}
+function cleanupBanner() {
+  if (ls.get('brisk-cleanhide', 0) > Date.now()) return '';
+  const b = bulkSenders().filter(e => e.bulk), unread = b.reduce((s, e) => s + e.unread, 0);
+  if (unread < 15) return '';
+  return `<button class="banner" id="cleanbanner">${ico('spark')}<b>${unread} unread emails from ${b.length} newsletters and mailing lists. Clean up?</b><span data-hideclean="1" style="color:var(--mute);padding:4px 6px">✕</span></button>`;
+}
+function cleanupPanel() {
+  const list = bulkSenders().slice(0, 30);
+  sheet('Clean up', `<p class="sumline">Senders filling your inbox most, from the emails on this phone. <b style="font-size:inherit">Delete all</b> also finds older ones on the server.</p>` +
+    (list.map((e, i) => `<div class="srow"><div class="grow"><b>${esc(e.from)}</b><small>${e.n} email${e.n > 1 ? 's' : ''}${e.unread ? ' · ' + e.unread + ' unread' : ''}${multi() ? ' · ' + esc((accById(e.acct) || {}).email || '') : ''}</small></div>
+      ${e.bulk ? `<button data-unsub="${i}">Unsubscribe</button>` : ''}<button class="dang" data-delall="${i}">Delete all</button></div>`).join('') || '<p class="sumline">Nothing to clean up. Nice.</p>'), box => {
+    box.querySelectorAll('[data-delall]').forEach(b => b.onclick = () => deleteAllFrom(list[+b.dataset.delall]));
+    box.querySelectorAll('[data-unsub]').forEach(b => b.onclick = async () => {
+      const e = list[+b.dataset.unsub]; b.textContent = '…';
+      try { const body = await call('body', {acct: e.latest.acct, folder: e.latest.folder, uid: e.latest.uid, peek: true}); b.textContent = 'Unsubscribe';
+        if (!body.unsub) { toast('No unsubscribe link in their emails. Try Delete all, or report as spam.'); return; }
+        unsubscribe(e.latest, body.unsub);
+      } catch (er) { b.textContent = 'Unsubscribe'; toast(er.message); }
+    });
+  });
+}
+async function deleteAllFrom(e) {
+  const a = accById(e.acct); if (!a) return;
+  toast('Finding emails from ' + e.from + '…');
+  const local = allCached().filter(m => m.acct === e.acct && (m.email || '').toLowerCase() === e.email.toLowerCase() && !/trash|bin/i.test(m.folder));
+  let found = [];
+  const sp = spOf(e.acct);
+  try {
+    if (a.gmail) { const r = await call('search', {acct: e.acct, folder: sp.all || 'INBOX', query: 'from:' + e.email, count: 500}); found = r.items; }
+    else for (const f of [...new Set(['INBOX', sp.archive].filter(Boolean))]) { const r = await call('search', {acct: e.acct, folder: f, terms: [e.email], fromOnly: true, count: 500}); found = found.concat(r.items); }
+  } catch (er) { /* fall back to what's on the phone */ }
+  const all = new Map(); for (const m of local.concat(found)) all.set(key(m), m);
+  const items = [...all.values()];
+  if (!items.length) { toast('Nothing found'); return; }
+  dialog(`<p>Move <b>${items.length}</b> email${items.length > 1 ? 's' : ''} from <b>${esc(e.from)}</b> to the Bin?</p>`, [['Cancel'], ['Delete all', 'pri', () => { closeSheet(); move(items, 'trash'); }]]);
+}
+async function scheduledPanel() {
+  let items = [];
+  try { items = (await call('scheduled')).items; } catch (e) { toast(e.message); }
+  items.sort((a, b) => a.at - b.at);
+  sheet('Scheduled', `<p class="sumline">Emails waiting to be sent. They go out within a few minutes of the time you picked.</p>` +
+    (items.map(e => `<div class="srow"><div class="grow"><b>${esc(e.subject || '(no subject)')}</b><small>To ${esc(e.to)} · ${esc(whenText(e.at))}${multi() ? ' · from ' + esc((accById(e.acct) || {}).email || '') : ''}</small></div><button data-now="${esc(e.id)}">Send now</button><button class="dang" data-cancel="${esc(e.id)}">Cancel</button></div>`).join('') || '<p class="sumline">Nothing scheduled. Use the clock button when writing an email.</p>'), box => {
+    box.querySelectorAll('[data-cancel]').forEach(b => b.onclick = async () => { await call('unschedule', {id: b.dataset.cancel}).catch(e => toast(e.message)); toast('Cancelled. It’s still in your Drafts.'); scheduledPanel(); });
+    box.querySelectorAll('[data-now]').forEach(b => b.onclick = async () => { b.textContent = 'Sending…'; try { await call('sendNow', {id: b.dataset.now}); toast('Sent'); } catch (e) { toast(e.message); } scheduledPanel(); });
+  });
+}
+$('rows').addEventListener('click', e => {
+  if (e.target.closest('[data-hideclean]')) { e.stopPropagation(); ls.set('brisk-cleanhide', Date.now() + 3 * 864e5); renderList(); return; }
+  if (e.target.closest('#cleanbanner')) { e.stopPropagation(); cleanupPanel(); }
+}, true);
+$('emptybtn').onclick = () => {
+  const acct = S.acct, folder = S.src[0] && S.src[0].path, what = S.view === 'spam' ? 'Spam' : 'Bin';
+  if (acct === 'all' || !folder) return;
+  dialog(`<p>Permanently delete everything in ${what}${multi() ? ' for <b>' + esc((accById(acct) || {}).email) + '</b>' : ''}? This can’t be undone.</p>`, [['Cancel'], ['Empty ' + what, 'pri', async () => {
+    try { const r = await call('empty', {acct, folder}); S.items = []; cache[ck(acct, folder)] = []; saveCache(); renderList(); toast(`${r.deleted} email${r.deleted === 1 ? '' : 's'} deleted forever`); } catch (e) { toast(e.message); }
+  }]]);
+};
 function setView(acct, view, path) {
   flush(); S.pick = false; picked.clear(); $('app').classList.remove('picking'); S.acct = acct; S.view = view; S.src = acct === 'all' ? [] : [{acct, path: path || 'INBOX'}];
   S.filter = null; S.sel = null; S.query = ''; S.server = null; $('q').value = '';
@@ -1086,12 +1575,15 @@ $('rows').onkeydown = e => { if (e.key === 'Enter') { const rw = e.target.closes
 $('reader').onclick = e => {
   const a = e.target.closest('[data-a]'); if (a) return readerAction(a.dataset.a);
   const q = e.target.closest('[data-qr]'); if (q) return openCompose('reply', byKey(S.sel), q.dataset.qr);
+  const th = e.target.closest('[data-thr]');
+  if (th && S.thread) { const k = th.dataset.thr, x = byKey(k); S.thread.open.has(k) ? S.thread.open.delete(k) : S.thread.open.add(k); if (x) loadThreadBody(x); renderReader(); return; }
+  const cal = e.target.closest('[data-cal]'); if (cal) return addToCalendar(cal.dataset.cal);
   const at = e.target.closest('[data-att]');
-  if (at) { const m = byKey(S.sel); toast('Saving…'); call('attachment', {acct: m.acct, folder: m.folder, uid: m.uid, idx: +at.dataset.att}).then(r => toast('Saved to ' + r.saved)).catch(er => toast(er.message)); }
+  if (at) { const m = (at.dataset.k && byKey(at.dataset.k)) || byKey(S.sel); toast('Saving…'); call('attachment', {acct: m.acct, folder: m.folder, uid: m.uid, idx: +at.dataset.att}).then(r => toast('Saved to ' + r.saved)).catch(er => toast(er.message)); }
   const ln = e.target.closest('a[data-ext]'); if (ln) { e.preventDefault(); openUrl(ln.href); }
 };
 $('fab').onclick = () => openCompose();
-$('refresh').onclick = () => S.query ? runServer() : loadView(false);
+$('refresh').onclick = () => { lastWake = 0; wakeDue(); S.query ? runServer() : loadView(false); };
 let qt, st;
 $('q').addEventListener('input', e => {
   S.query = e.target.value.trim(); S.server = null; clearTimeout(qt); clearTimeout(st);
@@ -1135,8 +1627,9 @@ document.addEventListener('keydown', e => {
   else if (k === 'x' && S.sel) { S.pick ? togglePick(S.sel) : startPick(S.sel); }
   else if (S.pick && (k === '#' || k === 'Delete')) { const its = [...picked].map(byKey).filter(Boolean); if (its.length) { clearPick(); move(its, 'trash'); } }
   else if (S.pick && k === 'e') { const its = [...picked].map(byKey).filter(Boolean); if (its.length) { clearPick(); move(its, 'archive'); } }
+  else if (m && k === 'z') snoozeDialog(membersOf(m));
   else if (m && k === 'e') move([m], 'archive');
-  else if (m && k === '#') move([m], 'trash');
+  else if (m && k === '#') move(membersOf(m), 'trash');
   else if (m && k === 's') flag(m, m.star ? 'unstar' : 'star');
   else if (m && k === 'u') { flag(m, 'unread'); closeReader(); }
   else if (m && k === 'r') { e.preventDefault(); openCompose('reply', m); }
@@ -1144,6 +1637,7 @@ document.addEventListener('keydown', e => {
 });
 window.briskBack = () => {
   if (!$('dlg').classList.contains('hide')) { closeDialog(); return true; }
+  if (!$('sheet').classList.contains('hide')) { closeSheet(); return true; }
   if (S.pick && !$('compose').classList.contains('open')) { clearPick(); return true; }
   if (!$('login').classList.contains('hide') && S.accounts.length) { showLogin(false); return true; }
   if ($('compose').classList.contains('open')) { $('cclose').click(); return true; }
@@ -1154,7 +1648,16 @@ window.briskBack = () => {
   if (S.acct !== 'all' || S.view !== 'inbox') { setView(multi() ? 'all' : S.accounts[0].id, 'inbox', 'INBOX'); return true; }
   flush(); return false;
 };
-setInterval(() => { if (!document.hidden && S.accounts.length && !S.query && !pending && $('login').classList.contains('hide')) loadView(false); }, 90000);
+setInterval(() => { if (!document.hidden && S.accounts.length && !S.query && !pending && $('login').classList.contains('hide')) { wakeDue(); loadView(false); } }, 90000);
+window.briskLaunch = l => {
+  if (!l) return;
+  if (l.compose) { openCompose(); return; }
+  if (l.open) {
+    const o = l.open, k = o.acct + '|' + o.folder + '|' + o.uid;
+    const m = byKey(k) || allCached().find(x => key(x) === k) || {acct: o.acct, folder: o.folder, uid: o.uid, from: '', email: '', subj: 'Loading…', t: Date.now(), seen: true, label: 'work'};
+    closeSheet(); openDrawer(false); openMail(m);
+  }
+};
 
 /* ================= accounts + start ================= */
 function showLogin(on) {
@@ -1177,7 +1680,7 @@ $('lform').onsubmit = async e => {
   try {
     const a = await call('login', args); $('lpass').value = '';
     S.accounts.push(a); showLogin(false);
-    await loadFolders(a.id);
+    await loadFolders(a.id); syncNotify();
     setView(multi() ? 'all' : a.id, 'inbox', 'INBOX');
     toast('Added ' + a.email);
   } catch (er) { $('lerr').textContent = er.message; }
@@ -1187,17 +1690,21 @@ async function loadFolders(id) {
   try { S.folders[id] = await call('folders', {acct: id}); ls.set('brisk-folders2', S.folders); } catch (e) {}
 }
 function updateAvatar() { $('avbtn').textContent = (settings.name || (S.accounts[0] || {}).email || 'B')[0].toUpperCase(); }
-async function start(accounts) {
+async function start(accounts, st) {
   S.accounts = accounts; updateAvatar();
+  if (st && typeof st.lock === 'boolean') { settings.lock = st.lock; saveSettings(); }
   const saved = ls.get('brisk-folders2', {});
   for (const a of accounts) if (saved[a.id]) S.folders[a.id] = saved[a.id];
   renderChips(); renderReader();
   setView(multi() ? 'all' : accounts[0].id, 'inbox', 'INBOX');
   accounts.forEach(a => loadFolders(a.id));
+  syncNotify(); wakeDue(); loadSnoozes();
+  if (!DEMO) { try { const l = N.takeLaunch(); if (l) setTimeout(() => briskLaunch(JSON.parse(l)), 300); } catch (e) {} }
 }
 (async () => {
   renderChips(); setProv('gmail');
-  try { const s = await call('status'); if (s.accounts && s.accounts.length) return start(s.accounts); } catch (e) {}
+  applyLook();
+  try { const s = await call('status'); if (s.accounts && s.accounts.length) return start(s.accounts, s); } catch (e) {}
   showLogin(true);
 })();
 
@@ -1214,6 +1721,10 @@ function demo(m, a) {
     ['v',3,'Mum','mum@family.net','Sunday dinner?','Hello love,\n\nAre you coming for dinner on Sunday? Dad is doing a roast.\n\nLove Mum x',T(19,17,3),false,false,false],
     ['g',5,'Tom Price','tom@brightlane.co.uk','Weekly sync agenda','Agenda for Monday’s weekly sync at 10am: release status, support backlog and holiday cover.',T(19,9,15),true,false,false],
     ['v',4,'The Verge','newsletter@theverge.com','This week in tech: the newsletter edition','This week: new phones, a big AI release and the best streaming boxes of the year. Unsubscribe any time.',T(18,7,0),true,false,false],
+    ['g',7,'The Verge','newsletter@theverge.com','The Verge: weekend reads','Our favourite long reads of the week. Unsubscribe any time.',T(16,7,0),false,false,false],
+    ['g',8,'The Verge','newsletter@theverge.com','The Verge: deals of the week','Big discounts on headphones and TVs. Unsubscribe any time.',T(15,7,0),false,false,false],
+    ['g',10,'Sarah Collins','sarah@brightlane.co.uk','Re: Project review moved to Tuesday','Perfect, see you then. I have booked the big meeting room.',T(20,15,10),false,false,false],
+    ['g',9,'Royal Mail','tracking@royalmail.com','Your parcel is out for delivery','Your parcel from Argos is out for delivery today. Tracking number RM4410992GB.',T(20,9,40),false,false,false],
     ['g',6,'Priya Shah','priya@northgate.com','Quick call about the invoice','Could we have a quick call about invoice INV-3381? Our finance team has the amount as £2,450 but the PO says £2,540.',T(17,16,45),true,false,false]
   ].map(([acct, uid, from, email, subj, body, t, seen, star, att]) => ({acct, uid, folder:'INBOX', from, email, to:'me', subj, body, t, seen, star, att}));
   const wait = v => new Promise(r => setTimeout(() => r(JSON.parse(JSON.stringify(v))), 120));
@@ -1225,7 +1736,12 @@ function demo(m, a) {
   if (m === 'list') { const it = a.folder === 'INBOX' ? M.filter(x => x.acct === a.acct) : []; return wait({total: it.length, items: it.map(({body, ...x}) => x)}); }
   if (m === 'snippets') return wait(Object.fromEntries(M.filter(x => x.acct === a.acct).map(x => [x.uid, x.body.replace(/\s+/g, ' ')])));
   if (m === 'body') { const x = M.find(y => y.uid === a.uid && y.acct === a.acct); return wait({...x, text: x.body, html: null, attachments: x.att ? [{idx:0, name:'Statement.pdf', size:88000}] : [], unsub: /newsletter/.test(x.email) ? '<https://example.com/unsub>' : '', messageId:'<x@y>', references:'', cc:'', replyTo:''}); }
-  if (m === 'send' || m === 'act' || m === 'logout') return wait({});
+  if (m === 'send' || m === 'act' || m === 'logout' || m === 'notifyConfig' || m === 'saveDraft' || m === 'deleteDraft' || m === 'unschedule' || m === 'sendNow' || m === 'snooze' || m === 'wake') return wait({});
+  if (m === 'snoozes' || m === 'scheduled') return wait({items: m === 'scheduled' ? [{id:'s1', acct:'g', at: Date.now() + 864e5, to:'priya@northgate.com', subject:'Re: Quick call about the invoice'}] : []});
+  if (m === 'wakeDue') return wait({woken: 0});
+  if (m === 'empty') return wait({deleted: 3});
+  if (m === 'schedule') return wait({id: 's' + Date.now()});
+  if (m === 'search') return wait({total: 0, items: []});
   return fail('Not available in preview');
 }
 }
