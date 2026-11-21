@@ -146,7 +146,7 @@ svg.i{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke
 #dlg{position:fixed;inset:0;background:rgba(4,12,24,.55);z-index:30;display:flex;align-items:center;justify-content:center;padding:20px}
 #dlg .box{background:var(--panel);border-radius:16px;padding:20px;max-width:380px;width:100%}
 #dlg .box p{margin:0 0 16px}
-#dlg .btns{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+#dlg .btns{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}#dlg .btns button{min-height:44px}
 #dlg .btns button{padding:0 14px;border:1px solid var(--line)}
 #dlg .btns .pri{background:var(--pink);color:#fff;border-color:var(--pink)}
 .lpick{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
@@ -828,7 +828,8 @@ function renderReader() {
     }).join('');
   } else content = bodyHtml(b, m) + attsHtml(bOk ? b : null);
   const quick = !warn && m.folder !== sp.sent && (QUICK[m.label] || []).length ? `<div class="quick">${QUICK[m.label].map(q => `<button data-qr="${esc(q)}">${esc(q)}</button>`).join('')}</div>` : '';
-  const unsub = bOk && b.unsub ? `<button class="chip" data-a="unsub" style="margin-top:16px">Unsubscribe from ${esc(m.from)}</button>` : '';
+  const unsub = (bOk && b.unsub ? `<button class="chip" data-a="unsub" style="margin-top:16px">Unsubscribe from ${esc(m.from)}</button> ` : '') +
+    (m.email && m.folder !== sp.sent && !inTrash ? `<button class="chip" data-a="delsender" style="margin-top:16px;color:var(--pink);border-color:var(--pink)">Delete all from ${esc(m.from)}</button>` : '');
   const until = S.snz.get(m.mid);
   r.innerHTML = `<div class="rbar">
     <button class="ib back" data-a="back" aria-label="Back">${ico('back')}</button><span class="sp"></span>
@@ -884,6 +885,7 @@ async function readerAction(a) {
   if (a === 'plain') { S.plain = !S.plain; return renderReader(); }
   if (a === 'recolour') return recolour(m);
   if (a === 'unsub') return unsubscribe(m);
+  if (a === 'delsender') return deleteAllFromSenders(sendersOf([m]), all);
 }
 function recolour(m) {
   dialog(`<p>Always colour emails from <b>${esc(m.email)}</b> as:</p><div class="lpick">${Object.entries(LABELS).map(([k, L]) => `<button class="chip" data-pick="${k}"><span class="dot" style="background:${L.c}"></span>${L.name}</button>`).join('')}</div>`, [['Cancel']], box => {
@@ -1024,7 +1026,14 @@ $('selbar').onclick = e => {
     return updatePick();
   }
   if (!items.length) { toast('Tap emails to select them first'); return; }
-  if (op === 'trash' || op === 'archive') { clearPick(); move(items, op); return; }
+  if (op === 'trash') {
+    const senders = sendersOf(items);
+    const who = senders.length === 1 ? esc(senders[0].from) : senders.length + ' senders';
+    dialog(`<p>Delete the <b>${items.length}</b> selected email${items.length > 1 ? 's' : ''}, or everything from <b>${who}</b>?</p><p style="font-size:14px;color:var(--mute)">“Everything” searches your whole mailbox first and shows you the total before deleting.</p>`,
+      [['Cancel'], ['Just these', '', () => { clearPick(); move(items, 'trash'); }], ['Everything from ' + (senders.length === 1 ? 'sender' : 'these senders'), 'pri', () => { clearPick(); deleteAllFromSenders(senders, items); }]]);
+    return;
+  }
+  if (op === 'archive') { clearPick(); move(items, op); return; }
   if (op === 'snooze') { clearPick(); snoozeDialog(items); return; }
   if (op === 'read') { const all = items.every(m => m.seen); flagMany(items, all ? 'unread' : 'read'); toast(`${items.length} marked ${all ? 'unread' : 'read'}`); }
   if (op === 'star') { const all = items.every(m => m.star); flagMany(items, all ? 'unstar' : 'star'); toast(`${items.length} ${all ? 'unstarred' : 'starred'}`); }
@@ -1505,21 +1514,40 @@ function cleanupPanel() {
     });
   });
 }
-async function deleteAllFrom(e) {
-  const a = accById(e.acct); if (!a) return;
-  toast('Finding emails from ' + e.from + '…');
-  const local = allCached().filter(m => m.acct === e.acct && (m.email || '').toLowerCase() === e.email.toLowerCase() && !/trash|bin/i.test(m.folder));
-  let found = [];
-  const sp = spOf(e.acct);
-  try {
-    if (a.gmail) { const r = await call('search', {acct: e.acct, folder: sp.all || 'INBOX', query: 'from:' + e.email, count: 500}); found = r.items; }
-    else for (const f of [...new Set(['INBOX', sp.archive].filter(Boolean))]) { const r = await call('search', {acct: e.acct, folder: f, terms: [e.email], fromOnly: true, count: 500}); found = found.concat(r.items); }
-  } catch (er) { /* fall back to what's on the phone */ }
-  const all = new Map(); for (const m of local.concat(found)) all.set(key(m), m);
-  const items = [...all.values()];
-  if (!items.length) { toast('Nothing found'); return; }
-  dialog(`<p>Move <b>${items.length}</b> email${items.length > 1 ? 's' : ''} from <b>${esc(e.from)}</b> to the Bin?</p>`, [['Cancel'], ['Delete all', 'pri', () => { closeSheet(); move(items, 'trash'); }]]);
+async function findAllFrom(senders) {
+  const all = new Map();
+  await Promise.all(senders.map(async e => {
+    const a = accById(e.acct); if (!a) return;
+    const em = e.email.toLowerCase(), sp = spOf(e.acct);
+    for (const m of allCached()) if (m.acct === e.acct && (m.email || '').toLowerCase() === em && !/trash|bin|spam|junk/i.test(m.folder) && m.folder !== sp.sent) all.set(key(m), m);
+    try {
+      if (a.gmail) { const r = await call('search', {acct: e.acct, folder: sp.all || 'INBOX', query: 'from:' + e.email + ' -in:trash -in:spam', count: 1000}); r.items.forEach(m => all.set(key(m), withLabel([m])[0])); }
+      else for (const f of [...new Set(['INBOX', sp.archive].filter(Boolean))]) { const r = await call('search', {acct: e.acct, folder: f, terms: [e.email], fromOnly: true, count: 1000}); r.items.forEach(m => all.set(key(m), withLabel([m])[0])); }
+    } catch (er) { /* keep what's on the phone */ }
+  }));
+  // Gmail can list one email in Inbox and All Mail: keep one copy, preferring the one already on screen
+  const seen = new Map();
+  for (const m of all.values()) { const sig = m.acct + '|' + (m.mid || m.subj + m.t); const prev = seen.get(sig); if (!prev || (prev.folder !== 'INBOX' && m.folder === 'INBOX')) seen.set(sig, m); }
+  return [...seen.values()];
 }
+function sendersOf(items) {
+  const g = new Map();
+  for (const m of items) if (m.email) { const k = m.acct + '|' + m.email.toLowerCase(); if (!g.has(k)) g.set(k, {acct: m.acct, email: m.email, from: m.from}); }
+  return [...g.values()];
+}
+async function deleteAllFromSenders(senders, fallback) {
+  if (!senders.length) return;
+  const names = senders.length === 1 ? senders[0].from : senders.length === 2 ? senders[0].from + ' and ' + senders[1].from : senders.length + ' senders';
+  toast('Finding every email from ' + names + '…', false, 20000);
+  const items = await findAllFrom(senders);
+  const merged = new Map(items.map(m => [key(m), m])); (fallback || []).forEach(m => merged.set(key(m), m));
+  const list = [...merged.values()];
+  $('toast').classList.remove('show');
+  if (!list.length) { toast('Nothing found'); return; }
+  const per = senders.map(e => `${esc(e.from)}: <b>${list.filter(m => m.acct === e.acct && (m.email || '').toLowerCase() === e.email.toLowerCase()).length}</b>`).join('<br>');
+  dialog(`<p>Found <b>${list.length}</b> email${list.length > 1 ? 's' : ''} to move to the Bin.</p><p style="font-size:14px;color:var(--mute)">${per}</p>`, [['Cancel'], ['Delete all ' + list.length, 'pri', () => { closeSheet(); move(list, 'trash'); }]]);
+}
+function deleteAllFrom(e) { return deleteAllFromSenders([e]); }
 async function scheduledPanel() {
   let items = [];
   try { items = (await call('scheduled')).items; } catch (e) { toast(e.message); }
