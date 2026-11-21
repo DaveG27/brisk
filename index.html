@@ -922,11 +922,48 @@ async function unsubscribe(m, btn) {
       $('toast').classList.remove('show');
       if (btn) { btn.textContent = 'Unsubscribed ✓'; btn.disabled = true; }
       dialog(`<p>Unsubscribed from <b>${esc(m.from)}</b>${r.method === 'email' ? ' (Brisk emailed their list to remove you)' : ''}. Some senders take a few days to stop.</p><p>Also delete all their emails?</p>`,
-        [['Keep them'], ['Delete all', 'pri', () => deleteAllFromSenders([{acct: m.acct, email: m.email, from: m.from}])]]);
+        [['Keep them'], ['Delete all', 'pri', () => deleteAllFromSenders([{acct: m.acct, email: m.email, from: m.from}], null, false)]]);
     }
   };
   dialog(`<p>Unsubscribe from <b>${esc(m.from)}</b>?</p>`, [['Cancel'], ['Unsubscribe', 'pri', go]]);
 }
+
+function bulkish(e) {
+  const em = (e.email || '').toLowerCase();
+  if (/no-?reply|newsletter|news@|info@|marketing|offers|deals|updates|hello@|mailer|promo/i.test(em)) return true;
+  return allCached().some(x => x.acct === e.acct && (x.email || '').toLowerCase() === em && x.label === 'news');
+}
+async function unsubSilently(senders, items) {
+  const todo = senders.filter(e => !unsubbed[e.acct + '|' + e.email.toLowerCase()]);
+  if (!todo.length) return;
+  let ok = 0, webs = [], none = [];
+  await Promise.all(todo.map(async e => {
+    const em = e.email.toLowerCase();
+    const m = (items || []).find(x => x.acct === e.acct && (x.email || '').toLowerCase() === em) || allCached().filter(x => x.acct === e.acct && (x.email || '').toLowerCase() === em).sort((p, q) => q.t - p.t)[0];
+    if (!m) { none.push(e.from); return; }
+    try {
+      const r = DEMO ? {method: 'oneclick'} : await call('unsubscribe', {acct: m.acct, cands: senderCands(m)});
+      if (r.method === 'oneclick' || r.method === 'email') { ok++; unsubbed[e.acct + '|' + em] = Date.now(); }
+      else if (r.method === 'web') webs.push({from: e.from, url: r.url});
+      else none.push(e.from);
+    } catch (er) { none.push(e.from); }
+  }));
+  ls.set('brisk-unsubbed', unsubbed);
+  if (webs.length) openUrl(webs[0].url);
+  const parts = [];
+  if (ok) parts.push(`Unsubscribed from ${ok} sender${ok > 1 ? 's' : ''}`);
+  if (webs.length) parts.push(`${webs[0].from}${webs.length > 1 ? ' and ' + (webs.length - 1) + ' more' : ''} need confirming on their page${webs.length > 1 ? ' (open their emails to do the rest)' : ''}`);
+  if (none.length) parts.push(`no unsubscribe option for ${none.slice(0, 2).join(', ')}${none.length > 2 ? '…' : ''}`);
+  if (parts.length) setTimeout(() => toast(parts.join('. ') + '.', false, 7000), 5000);
+}
+function unsubBox(senders, def) {
+  const fresh = senders.filter(e => !unsubbed[e.acct + '|' + e.email.toLowerCase()]);
+  if (!fresh.length) return '';
+  const who = fresh.length === 1 ? esc(fresh[0].from) : fresh.length + ' senders';
+  return `<label style="display:flex;gap:10px;align-items:center;min-height:44px;font-size:15px;margin-bottom:8px"><input type="checkbox" id="dlgunsub" style="width:20px;height:20px" ${def ? 'checked' : ''}> Also unsubscribe from ${who}</label>`;
+}
+const bulkishOrChosen = () => () => true;
+const unsubChecked = () => { const b = $('dlgunsub'); return !!(b && b.checked); };
 
 /* ================= snooze, delete forever, calendar ================= */
 function whenText(t) {
@@ -1048,8 +1085,10 @@ $('selbar').onclick = e => {
   if (op === 'trash') {
     const senders = sendersOf(items);
     const who = senders.length === 1 ? esc(senders[0].from) : senders.length + ' senders';
-    dialog(`<p>Delete the <b>${items.length}</b> selected email${items.length > 1 ? 's' : ''}, or everything from <b>${who}</b>?</p><p style="font-size:14px;color:var(--mute)">“Everything” searches your whole mailbox first and shows you the total before deleting.</p>`,
-      [['Cancel'], ['Just these', '', () => { clearPick(); move(items, 'trash'); }], ['Everything from ' + (senders.length === 1 ? 'sender' : 'these senders'), 'pri', () => { clearPick(); deleteAllFromSenders(senders, items); }]]);
+    const def = senders.some(bulkish);
+    dialog(`<p>Delete the <b>${items.length}</b> selected email${items.length > 1 ? 's' : ''}, or everything from <b>${who}</b>?</p><p style="font-size:14px;color:var(--mute)">“Everything” searches your whole mailbox first and shows you the total before deleting.</p>${unsubBox(senders, def)}`,
+      [['Cancel'], ['Just these', '', () => { const u = unsubChecked(); clearPick(); if (u) unsubSilently(senders.filter(bulkishOrChosen(senders)), items); move(items, 'trash'); }],
+       ['Everything from ' + (senders.length === 1 ? 'sender' : 'these senders'), 'pri', () => { const u = unsubChecked(); clearPick(); deleteAllFromSenders(senders, items, u); }]]);
     return;
   }
   if (op === 'archive') { clearPick(); move(items, op); return; }
@@ -1548,7 +1587,7 @@ function sendersOf(items) {
   for (const m of items) if (m.email) { const k = m.acct + '|' + m.email.toLowerCase(); if (!g.has(k)) g.set(k, {acct: m.acct, email: m.email, from: m.from}); }
   return [...g.values()];
 }
-async function deleteAllFromSenders(senders, fallback) {
+async function deleteAllFromSenders(senders, fallback, unsubDef) {
   if (!senders.length) return;
   const names = senders.length === 1 ? senders[0].from : senders.length === 2 ? senders[0].from + ' and ' + senders[1].from : senders.length + ' senders';
   toast('Finding every email from ' + names + '…', false, 20000);
@@ -1558,7 +1597,8 @@ async function deleteAllFromSenders(senders, fallback) {
   $('toast').classList.remove('show');
   if (!list.length) { toast('Nothing found'); return; }
   const per = senders.map(e => `${esc(e.from)}: <b>${list.filter(m => m.acct === e.acct && (m.email || '').toLowerCase() === e.email.toLowerCase()).length}</b>`).join('<br>');
-  dialog(`<p>Found <b>${list.length}</b> email${list.length > 1 ? 's' : ''} to move to the Bin.</p><p style="font-size:14px;color:var(--mute)">${per}</p>`, [['Cancel'], ['Delete all ' + list.length, 'pri', () => { closeSheet(); move(list, 'trash'); }]]);
+  const def = unsubDef === undefined ? senders.some(bulkish) : unsubDef;
+  dialog(`<p>Found <b>${list.length}</b> email${list.length > 1 ? 's' : ''} to move to the Bin.</p><p style="font-size:14px;color:var(--mute)">${per}</p>${unsubBox(senders, def)}`, [['Cancel'], ['Delete all ' + list.length, 'pri', () => { const u = unsubChecked(); closeSheet(); if (u) unsubSilently(senders, list); move(list, 'trash'); }]]);
 }
 function deleteAllFrom(e) { return deleteAllFromSenders([e]); }
 async function scheduledPanel() {
